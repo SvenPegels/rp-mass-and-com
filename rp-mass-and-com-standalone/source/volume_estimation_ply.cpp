@@ -40,10 +40,10 @@ const int line_default_offset = 15;
 
 
 /*
-./volume_estimation ~/rp-mass-and-com/pcd_files/rotated_scaled_cube.pcd
+./volume_estimation ~/rp-mass-and-com/pcd_files/rotated_scaled_cube.ply
 */
 /**
- * Supports .pcd and .ply files
+ * Supports .ply files
 */
 int main (int argc, char** argv) {
     if (argc < 2) {
@@ -51,10 +51,17 @@ int main (int argc, char** argv) {
         return -1;
     }
 
-    // pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZ> ()); // TODO: Temp
-
-    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr (new pcl::PointCloud<pcl::PointNormal> ());
-    pcl::PolygonMesh::Ptr mesh (new pcl::PolygonMesh);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZ> ()); // TODO: Temp
+    // pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr (new pcl::PointCloud<pcl::PointNormal> ());
+    pcl::PolygonMesh::Ptr mesh_ptr (new pcl::PolygonMesh);
+    // Load cloud data
+    // TODO: Extract point cloud from mesh instead
+    if (pcl::io::loadPLYFile(argv[1], *cloud_ptr) == 0) {
+        std::cerr << ".ply file found" << std::endl;
+    } else {
+        std::cerr << "Could not load point cloud data from given .ply file" << std::endl;
+        return -1;
+    }
     // Load cloud and normal data
     // if (pcl::io::loadPLYFile(argv[1], *cloud_w_normals_ptr) == 0) {
     //     std::cerr << ".ply file found" << std::endl;
@@ -63,34 +70,34 @@ int main (int argc, char** argv) {
     //     return -1;
     // }
     // Load mesh data
-    if (pcl::io::loadPLYFile(argv[1], *mesh) == 0) {
+    if (pcl::io::loadPLYFile(argv[1], *mesh_ptr) == 0) {
         std::cerr << ".ply file found" << std::endl;
     } else {
         std::cerr << "Could not load mesh data from given .ply file" << std::endl;
         return -1;
     }
-    return 0;
+    pcl::fromPCLPointCloud2(mesh_ptr->cloud, *cloud_ptr);
 
 
     /*
     Visualization
     */
     // Convert cloud xyz to xyzrgb
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_xyzrgb_ptr (new pcl::PointCloud<pcl::PointXYZRGB>());
-    pcl::copyPointCloud(*cloud_ptr, *cloud_xyzrgb_ptr);
-    for (int i = 0; i < (*cloud_xyzrgb_ptr).points.size(); i++) {
-        (*cloud_xyzrgb_ptr).points[i].r = 255;
-        (*cloud_xyzrgb_ptr).points[i].g = 0;
-        (*cloud_xyzrgb_ptr).points[i].b = 0;
-    }
+    // pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_xyzrgb_ptr (new pcl::PointCloud<pcl::PointXYZRGB>());
+    // pcl::copyPointCloud(*cloud_ptr, *cloud_xyzrgb_ptr);
+    // for (int i = 0; i < (*cloud_xyzrgb_ptr).points.size(); i++) {
+    //     (*cloud_xyzrgb_ptr).points[i].r = 255;
+    //     (*cloud_xyzrgb_ptr).points[i].g = 0;
+    //     (*cloud_xyzrgb_ptr).points[i].b = 0;
+    // }
 
-    pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_xyzrgb_w_normals_ptr (new pcl::PointCloud<pcl::PointXYZRGBNormal>());
-    pcl::copyPointCloud(*cloud_w_normals_ptr, *cloud_xyzrgb_w_normals_ptr);
-    for (int i = 0; i < (*cloud_xyzrgb_w_normals_ptr).points.size(); i++) {
-        (*cloud_xyzrgb_w_normals_ptr).points[i].r = 255;
-        (*cloud_xyzrgb_w_normals_ptr).points[i].g = 0;
-        (*cloud_xyzrgb_w_normals_ptr).points[i].b = 0;
-    }
+    // pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_xyzrgb_w_normals_ptr (new pcl::PointCloud<pcl::PointXYZRGBNormal>());
+    // pcl::copyPointCloud(*cloud_w_normals_ptr, *cloud_xyzrgb_w_normals_ptr);
+    // for (int i = 0; i < (*cloud_xyzrgb_w_normals_ptr).points.size(); i++) {
+    //     (*cloud_xyzrgb_w_normals_ptr).points[i].r = 255;
+    //     (*cloud_xyzrgb_w_normals_ptr).points[i].g = 0;
+    //     (*cloud_xyzrgb_w_normals_ptr).points[i].b = 0;
+    // }
 
     // Basic visualization setup
     pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
@@ -98,7 +105,9 @@ int main (int argc, char** argv) {
         // pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> single_color(cloud, 0, 255, 0);
         // viewer->addPointCloud<pcl::PointXYZ> (cloud, single_color, "sample cloud");
     // viewer->addPointCloud(cloud_xyzrgb_ptr);
-    viewer->addPointCloudNormals<pcl::PointXYZRGBNormal>(cloud_xyzrgb_w_normals_ptr, 1, 0.05f, "cloud");
+    // viewer->addPointCloudNormals<pcl::PointXYZRGBNormal>(cloud_xyzrgb_w_normals_ptr, 1, 0.05f, "cloud");
+    // viewer->addPolygonMesh(mesh_ptr);
+    viewer->addPolygonMesh(*mesh_ptr);
     
     viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud");
     viewer->addCoordinateSystem (1.0);
@@ -129,36 +138,49 @@ int main (int argc, char** argv) {
     feature_extractor.getOBB(min_point_OBB, max_point_OBB, position_OBB, rotational_matrix_OBB);
 
     // Draw AABB as wireframe
-    viewer->addCube(min_point_AABB.x, max_point_AABB.x, min_point_AABB.y, max_point_AABB.y, min_point_AABB.z, max_point_AABB.z, 1.0, 1.0, 1.0, "AABB");
+    viewer->addCube(min_point_AABB.x, max_point_AABB.x, min_point_AABB.y, max_point_AABB.y, min_point_AABB.z, max_point_AABB.z, 1.0, 0.0, 0.0, "AABB");
     viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, "AABB");
     // Draw OBB as a cube, at 'position', with rotation 'rot_quat', with vertex lengths, displayed as a wireframe
     Eigen::Vector3f position (position_OBB.x, position_OBB.y, position_OBB.z);
     Eigen::Quaternionf rot_quat (rotational_matrix_OBB);
     viewer->addCube (position, rot_quat, max_point_OBB.x - min_point_OBB.x, max_point_OBB.y - min_point_OBB.y, max_point_OBB.z - min_point_OBB.z, "OBB");
     viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, "OBB");
+    viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.0, 1.0, "OBB");
 
 
     // Read actual size (assuming file only contains volume data)
     float vol_actual = -1;
-    // std::string type;
-    // // Get data file name
-    // std::string data_file_name = argv[1];
-    // size_t start_pos = data_file_name.find(".pcd"); // Should check using std::string::npos, but would have failed already anyway if not a .pcd file
-    // data_file_name.replace(start_pos, 4, "_data.txt");
-    // std::cerr << "data_file_name '" << data_file_name << "'" << std::endl;
-    // // Open file
-    // std::ifstream in(data_file_name);
-    // if (in.fail()) {
-    //     std::cerr << "Data file '" << data_file_name << "' not found" << std::endl; 
-    // } else {
-    //     in >> type >> vol_actual;
-    //     std::cerr << "read data '" << type << " : " << vol_actual << "'" << std::endl;
-    // }
-    // in.close();
+    std::string type;
+    // Get data file name
+    std::string data_file_name = argv[1];
+    size_t start_pos = data_file_name.find(".ply"); // Should check using std::string::npos, but would have failed already anyway if not a .ply file
+    if (start_pos < data_file_name.length()) { // If 'data_file_name' contains ".ply"
+        data_file_name.replace(start_pos, 4, "_data.txt");
+        std::cerr << "data_file_name '" << data_file_name << "'" << std::endl;
+        // Open file
+        std::ifstream in(data_file_name);
+        if (in.fail()) {
+            std::cerr << "Data file '" << data_file_name << "' not found" << std::endl; 
+        } else {
+            in >> type >> vol_actual;
+            std::cerr << "read data '" << type << " : " << vol_actual << "'" << std::endl;
+        }
+        in.close();
+    }
+    
 
     // Calculate size
     float vol_AABB = (max_point_AABB.x - min_point_AABB.x)*(max_point_AABB.y - min_point_AABB.y)*(max_point_AABB.z - min_point_AABB.z);
     float vol_OBB = (max_point_OBB.x - min_point_OBB.x)*(max_point_OBB.y - min_point_OBB.y)*(max_point_OBB.z - min_point_OBB.z);
+
+
+    /*
+    Estimate using tetrahedrons
+    */
+    std::cerr << "Mesh header: '" << mesh_ptr->header << "'" << std::endl;
+    std::cerr << "Mesh polygons size: '" << mesh_ptr->polygons.size() << "'" << std::endl;
+    
+
 
     // Display size
     displayText(viewer, "Actual volume: " + std::to_string(vol_actual));
@@ -254,6 +276,8 @@ int main (int argc, char** argv) {
     }
 }
 
+
+
 /**
  * Creates a mesh from the given point cloud using a Greedy Triangulation Algorithm
  * Taken from: https://pcl.readthedocs.io/projects/tutorials/en/latest/greedy_projection.html
@@ -325,122 +349,7 @@ void meshFromPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, pcl::Poly
 
 }
 
-pcl::PolygonMesh meshFromPointCloud2(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr) {
-    // Estimate normals
-    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normal_est;
-    pcl::PointCloud<pcl::Normal>::Ptr normals_ptr (new pcl::PointCloud<pcl::Normal>);
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree_ptr (new pcl::search::KdTree<pcl::PointXYZ>);
-    tree_ptr->setInputCloud (cloud_ptr);
-    normal_est.setInputCloud (cloud_ptr);
-    normal_est.setSearchMethod (tree_ptr);
-    normal_est.setKSearch (20);
-    normal_est.compute (*normals_ptr);
-    dp(1);
 
-    // Concatenate the XYZ and normal fields*
-    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals (new pcl::PointCloud<pcl::PointNormal>);
-    pcl::concatenateFields (*cloud_ptr, *normals_ptr, *cloud_with_normals);
-    dp(2);
-
-    // Create search tree
-    pcl::search::KdTree<pcl::PointNormal>::Ptr tree2 (new pcl::search::KdTree<pcl::PointNormal>);
-    tree2->setInputCloud (cloud_with_normals);
-    dp(3);
-
-    // Initialize objects
-    pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
-    pcl::PolygonMesh triangles;
-
-    // Set the maximum distance between connected points (maximum edge length)
-    gp3.setSearchRadius (0.025);
-
-    // Set typical values for the parameters
-    gp3.setMu (2.5);
-    gp3.setMaximumNearestNeighbors (100);
-    gp3.setMaximumSurfaceAngle(M_PI/4); // 45 degrees
-    gp3.setMinimumAngle(M_PI/18); // 10 degrees
-    gp3.setMaximumAngle(2*M_PI/3); // 120 degrees
-    gp3.setNormalConsistency(false);
-    dp(40);
-
-    // Get result
-    gp3.setInputCloud (cloud_with_normals);
-    gp3.setSearchMethod (tree2);
-    dp(41);
-    // gp3.reconstruct (*mesh_res_ptr);
-    gp3.reconstruct(triangles);
-    dp(5);
-
-    // Additional vertex information
-    std::vector<int> parts = gp3.getPartIDs();
-    dp(6);
-    std::vector<int> states = gp3.getPointStates();
-    dp(7);
-
-    // std::cerr << "Resulting cloud param: " << mesh_res_ptr->cloud.height << "x" << mesh_res_ptr->cloud.width << std::endl;
-    std::cerr << "Resulting cloud local: " << triangles.cloud.height << "x" << triangles.cloud.width << std::endl;
-    dp(8);
-    return triangles;
-}
-
-
-pcl::PolygonMesh::Ptr meshFromPointCloud3(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr) {
-    // Estimate normals
-    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normal_est;
-    pcl::PointCloud<pcl::Normal>::Ptr normals_ptr (new pcl::PointCloud<pcl::Normal>);
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree_ptr (new pcl::search::KdTree<pcl::PointXYZ>);
-    tree_ptr->setInputCloud (cloud_ptr);
-    normal_est.setInputCloud (cloud_ptr);
-    normal_est.setSearchMethod (tree_ptr);
-    normal_est.setKSearch (20);
-    normal_est.compute (*normals_ptr);
-    dp(1);
-
-    // Concatenate the XYZ and normal fields*
-    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals (new pcl::PointCloud<pcl::PointNormal>);
-    pcl::concatenateFields (*cloud_ptr, *normals_ptr, *cloud_with_normals);
-    dp(2);
-
-    // Create search tree
-    pcl::search::KdTree<pcl::PointNormal>::Ptr tree2 (new pcl::search::KdTree<pcl::PointNormal>);
-    tree2->setInputCloud (cloud_with_normals);
-    dp(3);
-
-    // Initialize objects
-    pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
-    pcl::PolygonMesh::Ptr triangles;
-
-    // Set the maximum distance between connected points (maximum edge length)
-    gp3.setSearchRadius (0.025);
-
-    // Set typical values for the parameters
-    gp3.setMu (2.5);
-    gp3.setMaximumNearestNeighbors (100);
-    gp3.setMaximumSurfaceAngle(M_PI/4); // 45 degrees
-    gp3.setMinimumAngle(M_PI/18); // 10 degrees
-    gp3.setMaximumAngle(2*M_PI/3); // 120 degrees
-    gp3.setNormalConsistency(false);
-    dp(40);
-
-    // Get result
-    gp3.setInputCloud (cloud_with_normals);
-    gp3.setSearchMethod (tree2);
-    dp(41);
-    // gp3.reconstruct (*mesh_res_ptr);
-    gp3.reconstruct(*triangles);
-    dp(5);
-
-    // Additional vertex information
-    std::vector<int> parts = gp3.getPartIDs();
-    dp(6);
-    std::vector<int> states = gp3.getPointStates();
-    dp(7);
-
-    // std::cerr << "Resulting cloud param: " << mesh_res_ptr->cloud.height << "x" << mesh_res_ptr->cloud.width << std::endl;
-    std::cerr << "Resulting cloud local: " << triangles->cloud.height << "x" << triangles->cloud.width << std::endl;
-    dp(8);
-    return triangles;
-}
 
 /**
  * Displays given text in the bottom left corner, automatically placing it above previously displayed text
@@ -451,7 +360,6 @@ void displayText(pcl::visualization::PCLVisualizer::Ptr viewer, const std::strin
     line_counter++;
 }
 
-
 void dp(int n) {
-    // std::cerr << "Here " << n << std::endl;
+    std::cerr << "Here " << n << std::endl;
 }
