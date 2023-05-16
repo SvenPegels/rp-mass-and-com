@@ -112,6 +112,7 @@ set(CMAKE_MAKEFILE_PRODUCTS
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
+  "CMakeFiles/volume_estimation_obj.dir/DependInfo.cmake"
   "CMakeFiles/volume_estimation_ply.dir/DependInfo.cmake"
   "CMakeFiles/volume_estimation.dir/DependInfo.cmake"
   "CMakeFiles/pcd_write.dir/DependInfo.cmake"

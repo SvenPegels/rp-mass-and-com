@@ -111,6 +111,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named volume_estimation_obj
+
+# Build rule for target.
+volume_estimation_obj: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 volume_estimation_obj
+.PHONY : volume_estimation_obj
+
+# fast build rule for target.
+volume_estimation_obj/fast:
+	$(MAKE) -f CMakeFiles/volume_estimation_obj.dir/build.make CMakeFiles/volume_estimation_obj.dir/build
+.PHONY : volume_estimation_obj/fast
+
+#=============================================================================
 # Target rules for targets named volume_estimation_ply
 
 # Build rule for target.
@@ -203,6 +216,33 @@ volume_estimation.cpp.s:
 	$(MAKE) -f CMakeFiles/volume_estimation.dir/build.make CMakeFiles/volume_estimation.dir/volume_estimation.cpp.s
 .PHONY : volume_estimation.cpp.s
 
+volume_estimation_obj.o: volume_estimation_obj.cpp.o
+
+.PHONY : volume_estimation_obj.o
+
+# target to build an object file
+volume_estimation_obj.cpp.o:
+	$(MAKE) -f CMakeFiles/volume_estimation_obj.dir/build.make CMakeFiles/volume_estimation_obj.dir/volume_estimation_obj.cpp.o
+.PHONY : volume_estimation_obj.cpp.o
+
+volume_estimation_obj.i: volume_estimation_obj.cpp.i
+
+.PHONY : volume_estimation_obj.i
+
+# target to preprocess a source file
+volume_estimation_obj.cpp.i:
+	$(MAKE) -f CMakeFiles/volume_estimation_obj.dir/build.make CMakeFiles/volume_estimation_obj.dir/volume_estimation_obj.cpp.i
+.PHONY : volume_estimation_obj.cpp.i
+
+volume_estimation_obj.s: volume_estimation_obj.cpp.s
+
+.PHONY : volume_estimation_obj.s
+
+# target to generate assembly for a file
+volume_estimation_obj.cpp.s:
+	$(MAKE) -f CMakeFiles/volume_estimation_obj.dir/build.make CMakeFiles/volume_estimation_obj.dir/volume_estimation_obj.cpp.s
+.PHONY : volume_estimation_obj.cpp.s
+
 volume_estimation_ply.o: volume_estimation_ply.cpp.o
 
 .PHONY : volume_estimation_ply.o
@@ -238,6 +278,7 @@ help:
 	@echo "... depend"
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
+	@echo "... volume_estimation_obj"
 	@echo "... volume_estimation_ply"
 	@echo "... volume_estimation"
 	@echo "... pcd_write"
@@ -247,6 +288,9 @@ help:
 	@echo "... volume_estimation.o"
 	@echo "... volume_estimation.i"
 	@echo "... volume_estimation.s"
+	@echo "... volume_estimation_obj.o"
+	@echo "... volume_estimation_obj.i"
+	@echo "... volume_estimation_obj.s"
 	@echo "... volume_estimation_ply.o"
 	@echo "... volume_estimation_ply.i"
 	@echo "... volume_estimation_ply.s"

@@ -53,6 +53,7 @@ CMAKE_BINARY_DIR = /home/svenp/rp-mass-and-com/rp-mass-and-com-standalone/build
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
+all: CMakeFiles/volume_estimation_obj.dir/all
 all: CMakeFiles/volume_estimation_ply.dir/all
 all: CMakeFiles/volume_estimation.dir/all
 all: CMakeFiles/pcd_write.dir/all
@@ -65,11 +66,39 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
+clean: CMakeFiles/volume_estimation_obj.dir/clean
 clean: CMakeFiles/volume_estimation_ply.dir/clean
 clean: CMakeFiles/volume_estimation.dir/clean
 clean: CMakeFiles/pcd_write.dir/clean
 
 .PHONY : clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/volume_estimation_obj.dir
+
+# All Build rule for target.
+CMakeFiles/volume_estimation_obj.dir/all:
+	$(MAKE) -f CMakeFiles/volume_estimation_obj.dir/build.make CMakeFiles/volume_estimation_obj.dir/depend
+	$(MAKE) -f CMakeFiles/volume_estimation_obj.dir/build.make CMakeFiles/volume_estimation_obj.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/svenp/rp-mass-and-com/rp-mass-and-com-standalone/build/CMakeFiles --progress-num=5,6 "Built target volume_estimation_obj"
+.PHONY : CMakeFiles/volume_estimation_obj.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/volume_estimation_obj.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/svenp/rp-mass-and-com/rp-mass-and-com-standalone/build/CMakeFiles 2
+	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/volume_estimation_obj.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/svenp/rp-mass-and-com/rp-mass-and-com-standalone/build/CMakeFiles 0
+.PHONY : CMakeFiles/volume_estimation_obj.dir/rule
+
+# Convenience name for target.
+volume_estimation_obj: CMakeFiles/volume_estimation_obj.dir/rule
+
+.PHONY : volume_estimation_obj
+
+# clean rule for target.
+CMakeFiles/volume_estimation_obj.dir/clean:
+	$(MAKE) -f CMakeFiles/volume_estimation_obj.dir/build.make CMakeFiles/volume_estimation_obj.dir/clean
+.PHONY : CMakeFiles/volume_estimation_obj.dir/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/volume_estimation_ply.dir
@@ -78,7 +107,7 @@ clean: CMakeFiles/pcd_write.dir/clean
 CMakeFiles/volume_estimation_ply.dir/all:
 	$(MAKE) -f CMakeFiles/volume_estimation_ply.dir/build.make CMakeFiles/volume_estimation_ply.dir/depend
 	$(MAKE) -f CMakeFiles/volume_estimation_ply.dir/build.make CMakeFiles/volume_estimation_ply.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/svenp/rp-mass-and-com/rp-mass-and-com-standalone/build/CMakeFiles --progress-num=5,6 "Built target volume_estimation_ply"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/svenp/rp-mass-and-com/rp-mass-and-com-standalone/build/CMakeFiles --progress-num=7,8 "Built target volume_estimation_ply"
 .PHONY : CMakeFiles/volume_estimation_ply.dir/all
 
 # Build rule for subdir invocation for target.
