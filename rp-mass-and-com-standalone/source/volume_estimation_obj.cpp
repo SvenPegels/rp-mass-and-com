@@ -192,15 +192,17 @@ int main (int argc, char** argv) {
     // TODO: Fix and add to thesis: Produces problem with vertices being oriented towards the viewpoint (as described in bachelors thesis), where viewpoint is assumed to be at (0,0,0)
     pcl::features::computeApproximateNormals(*cloud_ptr, mesh_ptr->polygons, *surface_normals_ptr);
     // surface normals are added to the .getNormalVector3fMap()
+    // I think this calculates the surface normal by
+
+    (*surface_normals_ptr)[0].getNormalVector3fMap();
 
 
     // TODO: 1152 surfaces (triangles), but only 576 surface normals calculated. 576 is the original amount of surfaces (still squares). 1152 is after triangulaization (square -> triangles)
 
 
 
-    // Calculate surface centers
-    int i = 0;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr surface_centers_ptr (new pcl::PointCloud<pcl::PointXYZ>);
+    // Calculate surface centers (centroids)
+    pcl::PointCloud<pcl::PointXYZ>::Ptr surface_centroids_ptr (new pcl::PointCloud<pcl::PointXYZ>);
     for (int i = 0; i < mesh_ptr->polygons.size(); i++) { // Assumes each polygon has exactly 3 vertices (= a triangle)
         // Retrieve vertices
         pcl::Vertices vs = mesh_ptr->polygons[i];
@@ -215,7 +217,7 @@ int main (int argc, char** argv) {
         float center_y = (p1.y+p2.y+p3.y)/3;
         float center_z = (p1.z+p2.z+p3.z)/3;
         pcl::PointXYZ center (pcl::PointXYZ(center_x, center_y, center_z));
-        surface_centers_ptr->push_back(center);
+        surface_centroids_ptr->push_back(center);
         // if (i < 5) std::cerr << "p1: '" << p1 << "'" << std::endl;
         // if (i < 5) std::cerr << "p2: '" << p2 << "'" << std::endl;
         // if (i < 5) std::cerr << "p3: '" << p3 << "'" << std::endl;
@@ -225,20 +227,66 @@ int main (int argc, char** argv) {
         // surface_normals_ptr->at(i).normal_x += center_x;
         // surface_normals_ptr->at(i).normal_y += center_y;
         // surface_normals_ptr->at(i).normal_z += center_z;
-        std::cerr << "" << i << std::endl;
-        i++;
+        // std::cerr << "" << i << std::endl;
 
         // Calculate sign
         // = Inner product between vector from p1 to pref, and the face normal
 
     }
 
+    // Estimate centroid normals
+    pcl::PointCloud<pcl::Normal>::Ptr centroid_normals_ptr (new pcl::PointCloud<pcl::Normal>());
+    for (int i = 0; i < mesh_ptr->polygons.size(); i++) { // Assumes each polygon has exactly 3 vertices (= a triangle)
+        // Retrieve vertices
+        pcl::Vertices vs = mesh_ptr->polygons[i];
+        pcl::index_t i_v1 = vs.vertices[0];
+        pcl::index_t i_v2 = vs.vertices[1];
+        pcl::index_t i_v3 = vs.vertices[2];
+        pcl::PointNormal p1 = cloud_w_normals_ptr->at(i_v1);
+        pcl::PointNormal p2 = cloud_w_normals_ptr->at(i_v2);
+        pcl::PointNormal p3 = cloud_w_normals_ptr->at(i_v3);
+        pcl::PointXYZ centroid = surface_centroids_ptr->at(i);
+
+        if (i < 5) std::cerr << "p1: '" << p1 << "'" << std::endl;
+        if (i < 5) std::cerr << "p2: '" << p2 << "'" << std::endl;
+        if (i < 5) std::cerr << "p3: '" << p3 << "'" << std::endl;
+        if (i < 5) std::cerr << "center: '" << centroid << "'" << std::endl;
+
+        // Calculate surface normal
+        Eigen::Vector3f vec_a_b = p1.getVector3fMap() - p2.getVector3fMap();
+        Eigen::Vector3f vec_a_c = p1.getVector3fMap() - p3.getVector3fMap();;
+        Eigen::Vector3f normal = vec_a_b.cross(vec_a_c);
+        normal.normalize();
+        // Correct direction by pointing surface normal towards the sum vector of the 3 vertices' normals
+        // pcl::flipNormalTowardsViewpoint<Eigen::Vector3f>(normal, 
+        //     (p1.normal_x + p2.normal_x + p3.normal_x), 
+        //     (p1.normal_y + p2.normal_y + p3.normal_y), 
+        //     (p1.normal_z + p2.normal_z + p3.normal_z), 
+        //     normal.x(), normal.y(), normal.z());
+        centroid_normals_ptr->push_back(pcl::Normal(normal.x(), normal.y(), normal.z()));
+    }
+
+
+    pcl::PointCloud<pcl::PointNormal>::Ptr surface_centroids_w_normals_ptr (new pcl::PointCloud<pcl::PointNormal>);
+    pcl::concatenateFields(*surface_centroids_ptr, *centroid_normals_ptr, *surface_centroids_w_normals_ptr);
+
+    // viewer->addPointCloudNormals<pcl::PointXYZ, pcl::Normal>(surface_centroids_ptr, centroid_normals_ptr, 1, 0.05f, "centroid normals");
+    viewer->addPointCloudNormals<pcl::PointNormal>(surface_centroids_w_normals_ptr, 1, 0.05f, "centroid normals");
+    viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.5, 0.0, 0.0, "centroid normals");
+
+
+
+
+
+
+     
+
     // Display normals at the surface center
     // std::cerr << "before adding surface normals" << std::endl;
     std::cerr << "n_mesh_polygons : '" << mesh_ptr->polygons.size() << "'" << std::endl;
-    std::cerr << "n_surface_centers : '" << surface_centers_ptr->size() << "'" << std::endl;
+    std::cerr << "n_surface_centers : '" << surface_centroids_ptr->size() << "'" << std::endl;
     std::cerr << "n_surface_normals : '" << surface_normals_ptr->size() << "'" << std::endl;
-    viewer->addPointCloudNormals<pcl::PointXYZ, pcl::PointNormal>(surface_centers_ptr, surface_normals_ptr, 1, 0.05f, "surface normals"); //TODO: Add normal points
+    // viewer->addPointCloudNormals<pcl::PointXYZ, pcl::PointNormal>(surface_centroids_ptr, surface_normals_ptr, 1, 0.05f, "surface normals"); //TODO: Add normal points
     // // viewer->addPointCloudNormals<pcl::PointNormal>(surface_normals_ptr, 5, 0.05f, "surface normals 2");
 
     // std::cerr << "after adding surface normals" << std::endl;
@@ -247,7 +295,7 @@ int main (int argc, char** argv) {
     // Calculate volume
     pcl::index_t offset = 0;
     float vol_tetra = 0.0;
-    i = 0;
+    int i = 0;
     for (pcl::Vertices vs : mesh_ptr->polygons) { // Assumes each polygon has exactly 3 vertices (= a triangle)
         // Retrieve vertices
         pcl::index_t i_v1 = vs.vertices[0];
