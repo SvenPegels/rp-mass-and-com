@@ -106,7 +106,7 @@ int main (int argc, char** argv) {
     // viewer->addPointCloud(cloud_xyzrgb_ptr);
     // viewer->addPointCloudNormals<pcl::PointXYZRGBNormal>(cloud_xyzrgb_w_normals_ptr, 1, 0.05f, "cloud");
     viewer->addPolygonMesh(*mesh_ptr, "polygon mesh");
-    viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.5, 0.5, 0.5, "polygon mesh");
+    viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1.0, 1.0, 1.0, "polygon mesh");
     
     // viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud");
     viewer->addCoordinateSystem (1.0);
@@ -137,15 +137,15 @@ int main (int argc, char** argv) {
     feature_extractor.getOBB(min_point_OBB, max_point_OBB, position_OBB, rotational_matrix_OBB);
 
     //TODO: Uncomment to draw AABB and OBB again
-    // // Draw AABB as wireframe
-    // viewer->addCube(min_point_AABB.x, max_point_AABB.x, min_point_AABB.y, max_point_AABB.y, min_point_AABB.z, max_point_AABB.z, 1.0, 0.0, 0.0, "AABB");
-    // viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, "AABB");
-    // // Draw OBB as a cube, at 'position', with rotation 'rot_quat', with vertex lengths, displayed as a wireframe
-    // Eigen::Vector3f position (position_OBB.x, position_OBB.y, position_OBB.z);
-    // Eigen::Quaternionf rot_quat (rotational_matrix_OBB);
-    // viewer->addCube (position, rot_quat, max_point_OBB.x - min_point_OBB.x, max_point_OBB.y - min_point_OBB.y, max_point_OBB.z - min_point_OBB.z, "OBB");
-    // viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, "OBB");
-    // viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.0, 1.0, "OBB");
+    // Draw AABB as wireframe
+    viewer->addCube(min_point_AABB.x, max_point_AABB.x, min_point_AABB.y, max_point_AABB.y, min_point_AABB.z, max_point_AABB.z, 1.0, 0.0, 0.0, "AABB");
+    viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, "AABB");
+    // Draw OBB as a cube, at 'position', with rotation 'rot_quat', with vertex lengths, displayed as a wireframe
+    Eigen::Vector3f position (position_OBB.x, position_OBB.y, position_OBB.z);
+    Eigen::Quaternionf rot_quat (rotational_matrix_OBB);
+    viewer->addCube (position, rot_quat, max_point_OBB.x - min_point_OBB.x, max_point_OBB.y - min_point_OBB.y, max_point_OBB.z - min_point_OBB.z, "OBB");
+    viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, "OBB");
+    viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.0, 1.0, "OBB");
 
 
     // Read actual size (assuming file only contains volume data)
@@ -296,7 +296,8 @@ int main (int argc, char** argv) {
     pcl::index_t offset = 0;
     float vol_tetra = 0.0;
     int i = 0;
-    for (pcl::Vertices vs : mesh_ptr->polygons) { // Assumes each polygon has exactly 3 vertices (= a triangle)
+    for (int i = 0; i < mesh_ptr->polygons.size(); i++) { // Assumes each polygon has exactly 3 vertices (= a triangle)
+        pcl::Vertices vs = mesh_ptr->polygons[i];
         // Retrieve vertices
         pcl::index_t i_v1 = vs.vertices[0];
         pcl::index_t i_v2 = vs.vertices[1];
@@ -316,16 +317,22 @@ int main (int argc, char** argv) {
             + (p1.x-pref.x)*(p3.y-pref.y)*(p2.z-pref.z);
         float vol2 = std::abs(vol);
         float vol3 = vol2 / 6.0f;
-        // if (i < 10) std::cerr << "vol: '" << vol3 << "'" << std::endl;
-        i++;
-
+        Eigen::Vector3f surface_normal = centroid_normals_ptr->at(i).getNormalVector3fMap();
+        Eigen::Vector3f vec_0_1 = p1.getVector3fMap() - pref.getVector3fMap();
+        float sign = surface_normal.dot(vec_0_1);
+        sign = sign / std::abs(sign);
         // Calculate sign
         // = Inner product between vector from p1 to pref, and the face normal
+        //TODO: Get Eigen::vector3f's of both, then .dot(), then use sign of that
+        float vol4 = vol3 * sign;
 
 
+        if (i < 5) std::cerr << "vol3: '" << vol3 << "'" << std::endl;
+        if (i < 5) std::cerr << "sign: '" << sign << "'" << std::endl;
+        if (i < 5) std::cerr << "vol4: '" << vol4 << "'" << std::endl;
 
 
-        vol_tetra += vol3;
+        vol_tetra += vol4;
     }
     std::cerr << "Total tetra vol: '" << vol_tetra << "'" << std::endl;
 
