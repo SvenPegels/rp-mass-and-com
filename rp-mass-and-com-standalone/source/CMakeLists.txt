@@ -4,7 +4,7 @@ project(pcd_write)
 
 find_package(PCL 1.2 REQUIRED)
 
-include_directories(${PCL_INCLUDE_DIRS})
+include_directories(${PCL_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
@@ -14,5 +14,5 @@ add_executable (volume_estimation volume_estimation.cpp)
 target_link_libraries(volume_estimation ${PCL_LIBRARIES})
 add_executable (volume_estimation_ply volume_estimation_ply.cpp)
 target_link_libraries(volume_estimation_ply ${PCL_LIBRARIES})
-add_executable (volume_estimation_obj volume_estimation_obj.cpp)
+add_executable (volume_estimation_obj ${SOURCES_FILES_LIBS} volume_estimation_obj.cpp)
 target_link_libraries(volume_estimation_obj ${PCL_LIBRARIES})

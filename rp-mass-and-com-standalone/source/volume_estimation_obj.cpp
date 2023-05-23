@@ -20,7 +20,9 @@
 #include <pcl/features/from_meshes.h>
 
 #include <string>
-#include <fstream>
+
+/*Own code*/
+#include "data_reading.cpp"
 
 #define OUTPUT_DIR ((std::string)"output/")
 
@@ -47,6 +49,7 @@ const int line_default_offset = 15;
 ./volume_estimation_obj ~/rp-mass-and-com/pcd_files/rotated_torus.obj
 */
 /**
+ * Usage: ./volume_estimation_obj <.obj file>
  * Supports .obj files
 */
 int main (int argc, char** argv) {
@@ -71,12 +74,12 @@ int main (int argc, char** argv) {
         return -1;
     }
     // Load cloud and normal data
-    // if (pcl::io::loadOBJFile(argv[1], *cloud_w_normals_ptr) == 0) {
-    //     std::cerr << ".obj file found" << std::endl;
-    // } else {
-    //     std::cerr << "Could not load point cloud and normal data from given .obj file" << std::endl;
-    //     return -1;
-    // }
+    if (pcl::io::loadOBJFile(argv[1], *cloud_w_normals_ptr) == 0) {
+        std::cerr << ".obj file found" << std::endl;
+    } else {
+        std::cerr << "Could not load point cloud and normal data from given .obj file" << std::endl;
+        return -1;
+    }
     // Load mesh data
     if (pcl::io::loadOBJFile(argv[1], *mesh_ptr) == 0) {
         std::cerr << ".obj file found" << std::endl;
@@ -85,7 +88,7 @@ int main (int argc, char** argv) {
         return -1;
     }
     pcl::fromPCLPointCloud2(mesh_ptr->cloud, *cloud_ptr);
-    pcl::fromPCLPointCloud2(mesh_ptr->cloud, *cloud_w_normals_ptr);
+    // pcl::fromPCLPointCloud2(mesh_ptr->cloud, *cloud_w_normals_ptr);
     // std::cerr << "---------------->" << std::endl;
     // std::cerr << "cloud size: '" << cloud_ptr->size() << "'" << std::endl;
     // std::cerr << "cloud w normals size: '" << cloud_w_normals_ptr->size() << "'" << std::endl;
@@ -149,24 +152,7 @@ int main (int argc, char** argv) {
 
 
     // Read actual size (assuming file only contains volume data)
-    float vol_actual = -1;
-    std::string type;
-    // Get data file name
-    std::string data_file_name = argv[1];
-    size_t start_pos = data_file_name.find(".obj"); // Should check using std::string::npos, but would have failed already anyway if not a .obj file
-    if (start_pos < data_file_name.length()) { // If 'data_file_name' contains ".obj"
-        data_file_name.replace(start_pos, 4, "_data.txt");
-        std::cerr << "data_file_name '" << data_file_name << "'" << std::endl;
-        // Open file
-        std::ifstream in(data_file_name);
-        if (in.fail()) {
-            std::cerr << "Data file '" << data_file_name << "' not found" << std::endl; 
-        } else {
-            in >> type >> vol_actual;
-            std::cerr << "read data '" << type << " : " << vol_actual << "'" << std::endl;
-        }
-        in.close();
-    }
+    float vol_actual = readActualVolume(argv[1]);
     
 
     // Calculate size
@@ -195,10 +181,6 @@ int main (int argc, char** argv) {
     // I think this calculates the surface normal by
 
     (*surface_normals_ptr)[0].getNormalVector3fMap();
-
-
-    // TODO: 1152 surfaces (triangles), but only 576 surface normals calculated. 576 is the original amount of surfaces (still squares). 1152 is after triangulaization (square -> triangles)
-
 
 
     // Calculate surface centers (centroids)
@@ -234,9 +216,15 @@ int main (int argc, char** argv) {
 
     }
 
+    std::cerr << std::endl;
+
     // Estimate centroid normals
+    // Centroid normal is estimated using the cross product of the vectors from p1 to p2, and p1 to p3.
+    int n_flipped = 0;
     pcl::PointCloud<pcl::Normal>::Ptr centroid_normals_ptr (new pcl::PointCloud<pcl::Normal>());
     for (int i = 0; i < mesh_ptr->polygons.size(); i++) { // Assumes each polygon has exactly 3 vertices (= a triangle)
+        bool debug_print = i < 5 || i > mesh_ptr->polygons.size()-5 || (i >= 500 && i < 505);
+        if (debug_print) std::cerr << "i=" << i << std::endl;
         // Retrieve vertices
         pcl::Vertices vs = mesh_ptr->polygons[i];
         pcl::index_t i_v1 = vs.vertices[0];
@@ -247,16 +235,48 @@ int main (int argc, char** argv) {
         pcl::PointNormal p3 = cloud_w_normals_ptr->at(i_v3);
         pcl::PointXYZ centroid = surface_centroids_ptr->at(i);
 
-        if (i < 5) std::cerr << "p1: '" << p1 << "'" << std::endl;
-        if (i < 5) std::cerr << "p2: '" << p2 << "'" << std::endl;
-        if (i < 5) std::cerr << "p3: '" << p3 << "'" << std::endl;
-        if (i < 5) std::cerr << "center: '" << centroid << "'" << std::endl;
+        if (debug_print) std::cerr << "p1: '" << p1 << "'" << std::endl;
+        if (debug_print) std::cerr << "p2: '" << p2 << "'" << std::endl;
+        if (debug_print) std::cerr << "p3: '" << p3 << "'" << std::endl;
+
+        if (debug_print) std::cerr << "p1 normal: '(" << p1.normal_x << "," << p1.normal_y << "," << p1.normal_z << ")'" << std::endl;
+        if (debug_print) std::cerr << "p1 normEV: '" << p1.getNormalVector3fMap() << "'" << std::endl;
+        if (debug_print) std::cerr << "p2 normal: '(" << p2.normal_x << "," << p2.normal_y << "," << p2.normal_z << ")'" << std::endl;
+        if (debug_print) std::cerr << "p2 normEV: '" << p2.getNormalVector3fMap() << "'" << std::endl;
+        if (debug_print) std::cerr << "p3 normal: '(" << p3.normal_x << "," << p3.normal_y << "," << p3.normal_z << ")'" << std::endl;
+        if (debug_print) std::cerr << "p3 normEV: '" << p3.getNormalVector3fMap() << "'" << std::endl;
+
+        if (debug_print) std::cerr << "center: '" << centroid << "'" << std::endl;
 
         // Calculate surface normal
-        Eigen::Vector3f vec_a_b = p1.getVector3fMap() - p2.getVector3fMap();
-        Eigen::Vector3f vec_a_c = p1.getVector3fMap() - p3.getVector3fMap();;
-        Eigen::Vector3f normal = vec_a_b.cross(vec_a_c);
+        Eigen::Vector3f vec_p1_p2 = p1.getVector3fMap() - p2.getVector3fMap();
+        Eigen::Vector3f vec_p1_p3 = p1.getVector3fMap() - p3.getVector3fMap();;
+        Eigen::Vector3f normal = vec_p1_p2.cross(vec_p1_p3);
         normal.normalize();
+
+
+        //TODO: REMOVE (TEMPORARY). Flips normals to check if correction below works correctly
+        normal = Eigen::Vector3f(-1*normal.x(),-1*normal.y(),-1*normal.z());
+        //TODO: END REMOVE
+
+
+        if (debug_print) std::cerr << "cent. normal EV (non-corrected): '" << normal << "'" << std::endl;
+        
+        Eigen::Vector3f p1_normal = p1.getNormalVector3fMap();
+        Eigen::Vector3f p2_normal = p2.getNormalVector3fMap();
+        Eigen::Vector3f p3_normal = p3.getNormalVector3fMap();
+        // Flip centroid normal if the dot product between the calculated centroid normal and the sum of the vertex normals is '< 0'
+        Eigen::Vector3f vertex_normal_sum = p1_normal + p2_normal + p3_normal;
+        float sign = vertex_normal_sum.dot(normal);
+        if (/*normal is wrong*/ sign < 0.0f) {
+            n_flipped++;
+            if (debug_print) std::cerr << "FLIPPED" << std::endl;
+            normal = Eigen::Vector3f(-1*normal.x(),-1*normal.y(),-1*normal.z());
+        }
+
+        if (debug_print) std::cerr << "vert. normal sum EV: '" << vertex_normal_sum << "'" << std::endl;
+        if (debug_print) std::cerr << "cent. normal EV (corrected): '" << normal << "'" << std::endl;
+
         // Correct direction by pointing surface normal towards the sum vector of the 3 vertices' normals
         // pcl::flipNormalTowardsViewpoint<Eigen::Vector3f>(normal, 
         //     (p1.normal_x + p2.normal_x + p3.normal_x), 
@@ -264,7 +284,10 @@ int main (int argc, char** argv) {
         //     (p1.normal_z + p2.normal_z + p3.normal_z), 
         //     normal.x(), normal.y(), normal.z());
         centroid_normals_ptr->push_back(pcl::Normal(normal.x(), normal.y(), normal.z()));
+        if (debug_print) std::cerr << std::endl;
     }
+    std::cerr << "n_flipped: '" << n_flipped << "' out of '" << mesh_ptr->polygons.size() << "' polygons." << std::endl;
+    std::cerr << std::endl;
 
 
     pcl::PointCloud<pcl::PointNormal>::Ptr surface_centroids_w_normals_ptr (new pcl::PointCloud<pcl::PointNormal>);
@@ -283,9 +306,9 @@ int main (int argc, char** argv) {
 
     // Display normals at the surface center
     // std::cerr << "before adding surface normals" << std::endl;
-    std::cerr << "n_mesh_polygons : '" << mesh_ptr->polygons.size() << "'" << std::endl;
-    std::cerr << "n_surface_centers : '" << surface_centroids_ptr->size() << "'" << std::endl;
-    std::cerr << "n_surface_normals : '" << surface_normals_ptr->size() << "'" << std::endl;
+    // std::cerr << "n_mesh_polygons : '" << mesh_ptr->polygons.size() << "'" << std::endl;
+    // std::cerr << "n_surface_centers : '" << surface_centroids_ptr->size() << "'" << std::endl;
+    // std::cerr << "n_surface_normals : '" << surface_normals_ptr->size() << "'" << std::endl;
     // viewer->addPointCloudNormals<pcl::PointXYZ, pcl::PointNormal>(surface_centroids_ptr, surface_normals_ptr, 1, 0.05f, "surface normals"); //TODO: Add normal points
     // // viewer->addPointCloudNormals<pcl::PointNormal>(surface_normals_ptr, 5, 0.05f, "surface normals 2");
 
@@ -510,7 +533,7 @@ void meshFromPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, pcl::Poly
 
 
 /**
- * Displays given text in the bottom left corner, automatically placing it above previously displayed text
+ * Displays given text in the bottom left corner, automatically placing it above text previously placed using this function
 */
 void displayText(pcl::visualization::PCLVisualizer::Ptr viewer, const std::string &text) {
     viewer->addText(text, 0, line_default_offset + line_counter * line_height);
