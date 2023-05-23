@@ -19,10 +19,9 @@
 // Surface normal estimation
 #include <pcl/features/from_meshes.h>
 
-#include <string>
-
 /*Own code*/
 #include "data_reading.cpp"
+#include "visualization.cpp"
 
 #define OUTPUT_DIR ((std::string)"output/")
 
@@ -39,6 +38,7 @@ pcl::PolygonMesh meshFromPointCloud2(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_p
 pcl::PolygonMesh::Ptr meshFromPointCloud3(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr);
 void displayText(pcl::visualization::PCLVisualizer::Ptr viewer, const std::string &text);
 void dp(int n);
+void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr);
 
 static int line_counter = 0;
 const int line_height = 12;
@@ -104,19 +104,10 @@ int main (int argc, char** argv) {
     Visualization
     */
     // Basic visualization setup
-    pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-    viewer->setBackgroundColor (0, 0, 0);
-    // viewer->addPointCloud(cloud_xyzrgb_ptr);
-    // viewer->addPointCloudNormals<pcl::PointXYZRGBNormal>(cloud_xyzrgb_w_normals_ptr, 1, 0.05f, "cloud");
-    viewer->addPolygonMesh(*mesh_ptr, "polygon mesh");
-    viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1.0, 1.0, 1.0, "polygon mesh");
-    
-    // viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud");
-    viewer->addCoordinateSystem (1.0);
-    viewer->initCameraParameters ();
-    viewer->setCameraPosition(-5,5,-5, 0,0,0);
-    // Add center (0,0,0) sphere
-    viewer->addSphere((pcl::PointXYZ(0.0, 0.0, 0.0)), 0.05, "sphere", 0);
+    pcl::visualization::PCLVisualizer::Ptr viewer_ptr (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+    initVisualizer(viewer_ptr);
+    viewer_ptr->addPolygonMesh(*mesh_ptr, "polygon mesh");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1.0, 1.0, 1.0, "polygon mesh");
     
 
     /*
@@ -139,17 +130,10 @@ int main (int argc, char** argv) {
     Eigen::Matrix3f rotational_matrix_OBB;
     feature_extractor.getOBB(min_point_OBB, max_point_OBB, position_OBB, rotational_matrix_OBB);
 
-    //TODO: Uncomment to draw AABB and OBB again
-    // Draw AABB as wireframe
-    viewer->addCube(min_point_AABB.x, max_point_AABB.x, min_point_AABB.y, max_point_AABB.y, min_point_AABB.z, max_point_AABB.z, 1.0, 0.0, 0.0, "AABB");
-    viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, "AABB");
-    // Draw OBB as a cube, at 'position', with rotation 'rot_quat', with vertex lengths, displayed as a wireframe
-    Eigen::Vector3f position (position_OBB.x, position_OBB.y, position_OBB.z);
-    Eigen::Quaternionf rot_quat (rotational_matrix_OBB);
-    viewer->addCube (position, rot_quat, max_point_OBB.x - min_point_OBB.x, max_point_OBB.y - min_point_OBB.y, max_point_OBB.z - min_point_OBB.z, "OBB");
-    viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, "OBB");
-    viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.0, 1.0, "OBB");
-
+    // Draw AABB in blue
+    drawAABB(viewer_ptr, min_point_AABB, max_point_AABB, 0.0, 0.0, 1.0, "AABB");
+    // Draw OBB in red
+    drawOBB(viewer_ptr, min_point_OBB, max_point_OBB, position_OBB, rotational_matrix_OBB, 1.0, 0.0, 0.0, "OBB");
 
     // Read actual size (assuming file only contains volume data)
     float vol_actual = readActualVolume(argv[1]);
@@ -158,6 +142,7 @@ int main (int argc, char** argv) {
     // Calculate size
     float vol_AABB = (max_point_AABB.x - min_point_AABB.x)*(max_point_AABB.y - min_point_AABB.y)*(max_point_AABB.z - min_point_AABB.z);
     float vol_OBB = (max_point_OBB.x - min_point_OBB.x)*(max_point_OBB.y - min_point_OBB.y)*(max_point_OBB.z - min_point_OBB.z);
+    
 
 
     /*
@@ -224,6 +209,7 @@ int main (int argc, char** argv) {
     pcl::PointCloud<pcl::Normal>::Ptr centroid_normals_ptr (new pcl::PointCloud<pcl::Normal>());
     for (int i = 0; i < mesh_ptr->polygons.size(); i++) { // Assumes each polygon has exactly 3 vertices (= a triangle)
         bool debug_print = i < 5 || i > mesh_ptr->polygons.size()-5 || (i >= 500 && i < 505);
+        debug_print = false;
         if (debug_print) std::cerr << "i=" << i << std::endl;
         // Retrieve vertices
         pcl::Vertices vs = mesh_ptr->polygons[i];
@@ -294,8 +280,8 @@ int main (int argc, char** argv) {
     pcl::concatenateFields(*surface_centroids_ptr, *centroid_normals_ptr, *surface_centroids_w_normals_ptr);
 
     // viewer->addPointCloudNormals<pcl::PointXYZ, pcl::Normal>(surface_centroids_ptr, centroid_normals_ptr, 1, 0.05f, "centroid normals");
-    viewer->addPointCloudNormals<pcl::PointNormal>(surface_centroids_w_normals_ptr, 1, 0.05f, "centroid normals");
-    viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.5, 0.0, 0.0, "centroid normals");
+    viewer_ptr->addPointCloudNormals<pcl::PointNormal>(surface_centroids_w_normals_ptr, 1, 0.05f, "centroid normals");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.5, 0.0, 0.0, "centroid normals");
 
 
 
@@ -350,9 +336,9 @@ int main (int argc, char** argv) {
         float vol4 = vol3 * sign;
 
 
-        if (i < 5) std::cerr << "vol3: '" << vol3 << "'" << std::endl;
-        if (i < 5) std::cerr << "sign: '" << sign << "'" << std::endl;
-        if (i < 5) std::cerr << "vol4: '" << vol4 << "'" << std::endl;
+        // if (i < 5) std::cerr << "vol3: '" << vol3 << "'" << std::endl;
+        // if (i < 5) std::cerr << "sign: '" << sign << "'" << std::endl;
+        // if (i < 5) std::cerr << "vol4: '" << vol4 << "'" << std::endl;
 
 
         vol_tetra += vol4;
@@ -363,10 +349,10 @@ int main (int argc, char** argv) {
 
 
     // Display size
-    displayText(viewer, "Actual volume: " + std::to_string(vol_actual));
-    displayText(viewer, "AABB volume: " + std::to_string(vol_AABB));
-    displayText(viewer, "OBB volume: " + std::to_string(vol_OBB));
-    displayText(viewer, "Tetra volume: " + std::to_string(vol_tetra));
+    displayText(viewer_ptr, "Actual volume: " + std::to_string(vol_actual));
+    displayText(viewer_ptr, "AABB volume: " + std::to_string(vol_AABB));
+    displayText(viewer_ptr, "OBB volume: " + std::to_string(vol_OBB));
+    displayText(viewer_ptr, "Tetra volume: " + std::to_string(vol_tetra));
 
 
 
@@ -451,8 +437,8 @@ int main (int argc, char** argv) {
     
 
     // Run until window is closed
-    while (!viewer->wasStopped()) {
-        viewer->spinOnce(100);
+    while (!viewer_ptr->wasStopped()) {
+        viewer_ptr->spinOnce(100);
         std::this_thread::sleep_for(100ms);
     }
 }
@@ -543,4 +529,16 @@ void displayText(pcl::visualization::PCLVisualizer::Ptr viewer, const std::strin
 
 void dp(int n) {
     std::cerr << "Here " << n << std::endl;
+}
+
+/*
+Initializes PCLVisualizer with preferred values
+*/
+void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr) {
+    viewer_ptr->setBackgroundColor (0, 0, 0);
+    viewer_ptr->addCoordinateSystem (1.0);
+    viewer_ptr->initCameraParameters ();
+    viewer_ptr->setCameraPosition(-5,5,-5, 0,0,0);
+    // Add center (0,0,0) sphere
+    viewer_ptr->addSphere((pcl::PointXYZ(0.0, 0.0, 0.0)), 0.05, "sphere", 0);
 }
