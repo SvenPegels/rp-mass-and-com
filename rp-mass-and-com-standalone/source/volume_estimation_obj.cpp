@@ -1,3 +1,12 @@
+/**
+ * Volume estimation from .obj files
+ * 
+ * For code consistency:
+ * - Visualizers as ::Ptr
+ * - PointClouds/Meshes/etc as ::Ptr
+ * - Single points not as ::Ptr. Passed as &reference to functions where necessary
+*/
+
 #include <pcl/features/moment_of_inertia_estimation.h>
 #include <pcl/point_types.h>
 
@@ -23,17 +32,13 @@
 #include "data_reading.cpp"
 #include "visualization.cpp"
 #include "bounding_box.cpp"
+#include "volume_estimation.cpp"
+#include "surface_utils.cpp"
 
 #define OUTPUT_DIR ((std::string)"output/")
 
 using namespace std::chrono_literals;
 
-// void drawWireframeBox(pcl::visualization::PCLVisualizer::Ptr viewer, pcl::PointXYZ min, pcl::PointXYZ max, pcl::PointXYZ position);
-// void drawWireframeBox(pcl::visualization::PCLVisualizer::Ptr viewer, pcl::PointXYZ min, pcl::PointXYZ max, pcl::PointXYZ position, Eigen::Matrix3f rotation);
-// void calcAABBfromCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr);
-// void estimateOBBromCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr);
-// void viewerOneOff (pcl::visualization::PCLVisualizer& viewer);
-// void viewerPsycho (pcl::visualization::PCLVisualizer& viewer);
 void meshFromPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, pcl::PolygonMesh::Ptr mesh_res_ptr);
 pcl::PolygonMesh meshFromPointCloud2(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr);
 pcl::PolygonMesh::Ptr meshFromPointCloud3(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr);
@@ -97,9 +102,8 @@ int main (int argc, char** argv) {
 
 
     /*
-    Visualization
+    Visualization setup
     */
-    // Basic visualization setup
     pcl::visualization::PCLVisualizer::Ptr viewer_ptr (new pcl::visualization::PCLVisualizer ("3D Viewer"));
     initVisualizer(viewer_ptr);
     viewer_ptr->addPolygonMesh(*mesh_ptr, "polygon mesh");
@@ -117,25 +121,25 @@ int main (int argc, char** argv) {
     pcl::PointXYZ OBB_pos;
     Eigen::Matrix3f OBB_rot;
     getBoundingBoxes(cloud_ptr, AABB_min_point, AABB_max_point, OBB_min_point, OBB_max_point, OBB_pos, OBB_rot);
+    std::cerr << "AABB_min_point: '" << AABB_min_point << "'" << std::endl;
 
     // Draw AABB in blue
     drawBoundingBox(viewer_ptr, AABB_min_point, AABB_max_point, 0.0, 0.0, 1.0, "AABB");
     // Draw OBB in red
-    drawOBB(viewer_ptr, OBB_min_point, OBB_max_point, OBB_pos, OBB_rot, 1.0, 0.0, 0.0, "OBB");
+    drawBoundingBox(viewer_ptr, OBB_min_point, OBB_max_point, OBB_pos, OBB_rot, 1.0, 0.0, 0.0, "OBB");
 
     // Read actual size (assuming file only contains volume data)
     float vol_actual = readActualVolume(argv[1]);
     
     // Calculate size
-    float vol_AABB = (AABB_max_point.x - AABB_min_point.x)*(AABB_max_point.y - AABB_min_point.y)*(AABB_max_point.z - AABB_min_point.z);
-    float vol_OBB = (OBB_max_point.x - OBB_min_point.x)*(OBB_max_point.y - OBB_min_point.y)*(OBB_max_point.z - OBB_min_point.z);
+    float vol_AABB = calcBoxVolume(AABB_min_point, AABB_max_point);
+    float vol_OBB = calcBoxVolume(OBB_min_point, OBB_max_point);
     
 
     /*
-    Estimate using tetrahedrons
+    Estimate volume using tetrahedrons
     */
     std::cerr << "Mesh polygons size: '" << mesh_ptr->polygons.size() << "'" << std::endl;
-    pcl::PointXYZ pref (pcl::PointXYZ(0.0, 0.0, 0.0));
 
     // Estimate surface normals
     // pcl::PointCloud<pcl::PointNormal>::Ptr surface_normals_ptr (new pcl::PointCloud<pcl::PointNormal>());
@@ -150,114 +154,18 @@ int main (int argc, char** argv) {
     // surface normals are added to the .getNormalVector3fMap()
     // I think this calculates the surface normal by
 
-    (*surface_normals_ptr)[0].getNormalVector3fMap();
 
 
     // Calculate surface centers (centroids)
     pcl::PointCloud<pcl::PointXYZ>::Ptr surface_centroids_ptr (new pcl::PointCloud<pcl::PointXYZ>);
-    for (int i = 0; i < mesh_ptr->polygons.size(); i++) { // Assumes each polygon has exactly 3 vertices (= a triangle)
-        // Retrieve vertices
-        pcl::Vertices vs = mesh_ptr->polygons[i];
-        pcl::index_t i_v1 = vs.vertices[0];
-        pcl::index_t i_v2 = vs.vertices[1];
-        pcl::index_t i_v3 = vs.vertices[2];
-        pcl::PointXYZ p1 = cloud_ptr->at(i_v1);
-        pcl::PointXYZ p2 = cloud_ptr->at(i_v2);
-        pcl::PointXYZ p3 = cloud_ptr->at(i_v3);
-        // pcl::PointXYZ center = ;
-        float center_x = (p1.x+p2.x+p3.x)/3;
-        float center_y = (p1.y+p2.y+p3.y)/3;
-        float center_z = (p1.z+p2.z+p3.z)/3;
-        pcl::PointXYZ center (pcl::PointXYZ(center_x, center_y, center_z));
-        surface_centroids_ptr->push_back(center);
-        // if (i < 5) std::cerr << "p1: '" << p1 << "'" << std::endl;
-        // if (i < 5) std::cerr << "p2: '" << p2 << "'" << std::endl;
-        // if (i < 5) std::cerr << "p3: '" << p3 << "'" << std::endl;
-        // if (i < 5) std::cerr << "center: '" << center << "'" << std::endl;
-
-        // Add surface center coord to normals to make normals point in correct direction
-        // surface_normals_ptr->at(i).normal_x += center_x;
-        // surface_normals_ptr->at(i).normal_y += center_y;
-        // surface_normals_ptr->at(i).normal_z += center_z;
-        // std::cerr << "" << i << std::endl;
-
-        // Calculate sign
-        // = Inner product between vector from p1 to pref, and the face normal
-
-    }
+    calcSurfaceCentroids(mesh_ptr, cloud_ptr, surface_centroids_ptr);
 
     std::cerr << std::endl;
 
     // Estimate centroid normals
     // Centroid normal is estimated using the cross product of the vectors from p1 to p2, and p1 to p3.
-    int n_flipped = 0;
     pcl::PointCloud<pcl::Normal>::Ptr centroid_normals_ptr (new pcl::PointCloud<pcl::Normal>());
-    for (int i = 0; i < mesh_ptr->polygons.size(); i++) { // Assumes each polygon has exactly 3 vertices (= a triangle)
-        bool debug_print = i < 5 || i > mesh_ptr->polygons.size()-5 || (i >= 500 && i < 505);
-        debug_print = false;
-        if (debug_print) std::cerr << "i=" << i << std::endl;
-        // Retrieve vertices
-        pcl::Vertices vs = mesh_ptr->polygons[i];
-        pcl::index_t i_v1 = vs.vertices[0];
-        pcl::index_t i_v2 = vs.vertices[1];
-        pcl::index_t i_v3 = vs.vertices[2];
-        pcl::PointNormal p1 = cloud_w_normals_ptr->at(i_v1);
-        pcl::PointNormal p2 = cloud_w_normals_ptr->at(i_v2);
-        pcl::PointNormal p3 = cloud_w_normals_ptr->at(i_v3);
-        pcl::PointXYZ centroid = surface_centroids_ptr->at(i);
-
-        if (debug_print) std::cerr << "p1: '" << p1 << "'" << std::endl;
-        if (debug_print) std::cerr << "p2: '" << p2 << "'" << std::endl;
-        if (debug_print) std::cerr << "p3: '" << p3 << "'" << std::endl;
-
-        if (debug_print) std::cerr << "p1 normal: '(" << p1.normal_x << "," << p1.normal_y << "," << p1.normal_z << ")'" << std::endl;
-        if (debug_print) std::cerr << "p1 normEV: '" << p1.getNormalVector3fMap() << "'" << std::endl;
-        if (debug_print) std::cerr << "p2 normal: '(" << p2.normal_x << "," << p2.normal_y << "," << p2.normal_z << ")'" << std::endl;
-        if (debug_print) std::cerr << "p2 normEV: '" << p2.getNormalVector3fMap() << "'" << std::endl;
-        if (debug_print) std::cerr << "p3 normal: '(" << p3.normal_x << "," << p3.normal_y << "," << p3.normal_z << ")'" << std::endl;
-        if (debug_print) std::cerr << "p3 normEV: '" << p3.getNormalVector3fMap() << "'" << std::endl;
-
-        if (debug_print) std::cerr << "center: '" << centroid << "'" << std::endl;
-
-        // Calculate surface normal
-        Eigen::Vector3f vec_p1_p2 = p1.getVector3fMap() - p2.getVector3fMap();
-        Eigen::Vector3f vec_p1_p3 = p1.getVector3fMap() - p3.getVector3fMap();;
-        Eigen::Vector3f normal = vec_p1_p2.cross(vec_p1_p3);
-        normal.normalize();
-
-
-        //TODO: REMOVE (TEMPORARY). Flips normals to check if correction below works correctly
-        normal = Eigen::Vector3f(-1*normal.x(),-1*normal.y(),-1*normal.z());
-        //TODO: END REMOVE
-
-
-        if (debug_print) std::cerr << "cent. normal EV (non-corrected): '" << normal << "'" << std::endl;
-        
-        Eigen::Vector3f p1_normal = p1.getNormalVector3fMap();
-        Eigen::Vector3f p2_normal = p2.getNormalVector3fMap();
-        Eigen::Vector3f p3_normal = p3.getNormalVector3fMap();
-        // Flip centroid normal if the dot product between the calculated centroid normal and the sum of the vertex normals is '< 0'
-        Eigen::Vector3f vertex_normal_sum = p1_normal + p2_normal + p3_normal;
-        float sign = vertex_normal_sum.dot(normal);
-        if (/*normal is wrong*/ sign < 0.0f) {
-            n_flipped++;
-            if (debug_print) std::cerr << "FLIPPED" << std::endl;
-            normal = Eigen::Vector3f(-1*normal.x(),-1*normal.y(),-1*normal.z());
-        }
-
-        if (debug_print) std::cerr << "vert. normal sum EV: '" << vertex_normal_sum << "'" << std::endl;
-        if (debug_print) std::cerr << "cent. normal EV (corrected): '" << normal << "'" << std::endl;
-
-        // Correct direction by pointing surface normal towards the sum vector of the 3 vertices' normals
-        // pcl::flipNormalTowardsViewpoint<Eigen::Vector3f>(normal, 
-        //     (p1.normal_x + p2.normal_x + p3.normal_x), 
-        //     (p1.normal_y + p2.normal_y + p3.normal_y), 
-        //     (p1.normal_z + p2.normal_z + p3.normal_z), 
-        //     normal.x(), normal.y(), normal.z());
-        centroid_normals_ptr->push_back(pcl::Normal(normal.x(), normal.y(), normal.z()));
-        if (debug_print) std::cerr << std::endl;
-    }
-    std::cerr << "n_flipped: '" << n_flipped << "' out of '" << mesh_ptr->polygons.size() << "' polygons." << std::endl;
+    estimateSurfaceNormals(mesh_ptr, cloud_w_normals_ptr, centroid_normals_ptr);
     std::cerr << std::endl;
 
 
@@ -288,46 +196,7 @@ int main (int argc, char** argv) {
 
     // Calculate volume
     pcl::index_t offset = 0;
-    float vol_tetra = 0.0;
-    int i = 0;
-    for (int i = 0; i < mesh_ptr->polygons.size(); i++) { // Assumes each polygon has exactly 3 vertices (= a triangle)
-        pcl::Vertices vs = mesh_ptr->polygons[i];
-        // Retrieve vertices
-        pcl::index_t i_v1 = vs.vertices[0];
-        pcl::index_t i_v2 = vs.vertices[1];
-        pcl::index_t i_v3 = vs.vertices[2];
-        pcl::PointXYZ p1 = cloud_ptr->at(i_v1);
-        pcl::PointXYZ p2 = cloud_ptr->at(i_v2);
-        pcl::PointXYZ p3 = cloud_ptr->at(i_v3);
-        // mesh_ptr->cloud.at(i_v1, offset);
-        // mesh_ptr->cloud.data[i_v1];
-        // cloud_ptr->at(i_v1).x;
-        // Calculate tetrahedron's volume
-        float vol = -(p2.x-pref.x)*(p3.y-pref.y)*(p1.z-pref.z)
-            + (p3.x-pref.x)*(p2.y-pref.y)*(p1.z-pref.z)
-            + (p2.x-pref.x)*(p1.y-pref.y)*(p3.z-pref.z)
-            - (p1.x-pref.x)*(p2.y-pref.y)*(p3.z-pref.z)
-            - (p3.x-pref.x)*(p1.y-pref.y)*(p2.z-pref.z)
-            + (p1.x-pref.x)*(p3.y-pref.y)*(p2.z-pref.z);
-        float vol2 = std::abs(vol);
-        float vol3 = vol2 / 6.0f;
-        Eigen::Vector3f surface_normal = centroid_normals_ptr->at(i).getNormalVector3fMap();
-        Eigen::Vector3f vec_0_1 = p1.getVector3fMap() - pref.getVector3fMap();
-        float sign = surface_normal.dot(vec_0_1);
-        sign = sign / std::abs(sign);
-        // Calculate sign
-        // = Inner product between vector from p1 to pref, and the face normal
-        //TODO: Get Eigen::vector3f's of both, then .dot(), then use sign of that
-        float vol4 = vol3 * sign;
-
-
-        // if (i < 5) std::cerr << "vol3: '" << vol3 << "'" << std::endl;
-        // if (i < 5) std::cerr << "sign: '" << sign << "'" << std::endl;
-        // if (i < 5) std::cerr << "vol4: '" << vol4 << "'" << std::endl;
-
-
-        vol_tetra += vol4;
-    }
+    float vol_tetra = calcMeshVolumeTetrahedron(mesh_ptr, cloud_ptr, centroid_normals_ptr);
     std::cerr << "Total tetra vol: '" << vol_tetra << "'" << std::endl;
 
     
