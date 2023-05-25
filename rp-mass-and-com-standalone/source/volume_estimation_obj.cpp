@@ -22,6 +22,7 @@
 /*Own code*/
 #include "data_reading.cpp"
 #include "visualization.cpp"
+#include "bounding_box.cpp"
 
 #define OUTPUT_DIR ((std::string)"output/")
 
@@ -108,42 +109,31 @@ int main (int argc, char** argv) {
     /*
     AABB and OBB
     */
-    // Data calc setup
-    pcl::MomentOfInertiaEstimation<pcl::PointXYZ> feature_extractor;
-    feature_extractor.setInputCloud(cloud_ptr);
-    feature_extractor.compute();
-
-    // Extract AABB data
-    pcl::PointXYZ min_point_AABB;
-    pcl::PointXYZ max_point_AABB;
-    feature_extractor.getAABB(min_point_AABB, max_point_AABB);
-
-    // Extract OBB data
-    pcl::PointXYZ min_point_OBB;
-    pcl::PointXYZ max_point_OBB;
-    pcl::PointXYZ position_OBB;
-    Eigen::Matrix3f rotational_matrix_OBB;
-    feature_extractor.getOBB(min_point_OBB, max_point_OBB, position_OBB, rotational_matrix_OBB);
+    // Get bounding box data
+    pcl::PointXYZ AABB_min_point;
+    pcl::PointXYZ AABB_max_point;
+    pcl::PointXYZ OBB_min_point;
+    pcl::PointXYZ OBB_max_point;
+    pcl::PointXYZ OBB_pos;
+    Eigen::Matrix3f OBB_rot;
+    getBoundingBoxes(cloud_ptr, AABB_min_point, AABB_max_point, OBB_min_point, OBB_max_point, OBB_pos, OBB_rot);
 
     // Draw AABB in blue
-    drawAABB(viewer_ptr, min_point_AABB, max_point_AABB, 0.0, 0.0, 1.0, "AABB");
+    drawBoundingBox(viewer_ptr, AABB_min_point, AABB_max_point, 0.0, 0.0, 1.0, "AABB");
     // Draw OBB in red
-    drawOBB(viewer_ptr, min_point_OBB, max_point_OBB, position_OBB, rotational_matrix_OBB, 1.0, 0.0, 0.0, "OBB");
+    drawOBB(viewer_ptr, OBB_min_point, OBB_max_point, OBB_pos, OBB_rot, 1.0, 0.0, 0.0, "OBB");
 
     // Read actual size (assuming file only contains volume data)
     float vol_actual = readActualVolume(argv[1]);
     
-
     // Calculate size
-    float vol_AABB = (max_point_AABB.x - min_point_AABB.x)*(max_point_AABB.y - min_point_AABB.y)*(max_point_AABB.z - min_point_AABB.z);
-    float vol_OBB = (max_point_OBB.x - min_point_OBB.x)*(max_point_OBB.y - min_point_OBB.y)*(max_point_OBB.z - min_point_OBB.z);
+    float vol_AABB = (AABB_max_point.x - AABB_min_point.x)*(AABB_max_point.y - AABB_min_point.y)*(AABB_max_point.z - AABB_min_point.z);
+    float vol_OBB = (OBB_max_point.x - OBB_min_point.x)*(OBB_max_point.y - OBB_min_point.y)*(OBB_max_point.z - OBB_min_point.z);
     
-
 
     /*
     Estimate using tetrahedrons
     */
-    std::cerr << "Mesh header: '" << mesh_ptr->header << "'" << std::endl;
     std::cerr << "Mesh polygons size: '" << mesh_ptr->polygons.size() << "'" << std::endl;
     pcl::PointXYZ pref (pcl::PointXYZ(0.0, 0.0, 0.0));
 
