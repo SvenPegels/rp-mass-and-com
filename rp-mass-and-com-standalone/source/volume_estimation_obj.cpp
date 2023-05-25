@@ -115,7 +115,6 @@ int main (int argc, char** argv) {
     pcl::PointXYZ OBB_pos;
     Eigen::Matrix3f OBB_rot;
     getBoundingBoxes(cloud_ptr, AABB_min_point, AABB_max_point, OBB_min_point, OBB_max_point, OBB_pos, OBB_rot);
-    std::cerr << "AABB_min_point: '" << AABB_min_point << "'" << std::endl;
 
     // Draw AABB in blue
     drawBoundingBox(viewer_ptr, AABB_min_point, AABB_max_point, 0.0, 0.0, 1.0, "AABB");

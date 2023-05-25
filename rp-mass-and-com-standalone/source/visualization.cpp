@@ -42,6 +42,5 @@ void drawBoundingBox(pcl::visualization::PCLVisualizer::Ptr viewer_ptr, pcl::Poi
 */
 void displayText(pcl::visualization::PCLVisualizer::Ptr viewer, const std::string &text) {
     viewer->addText(text, 0, line_default_offset + line_counter * line_height);
-    std::cerr << line_counter << std::endl;
     line_counter++;
 }
