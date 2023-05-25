@@ -36,13 +36,8 @@ using namespace std::chrono_literals;
 void meshFromPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, pcl::PolygonMesh::Ptr mesh_res_ptr);
 pcl::PolygonMesh meshFromPointCloud2(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr);
 pcl::PolygonMesh::Ptr meshFromPointCloud3(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr);
-void displayText(pcl::visualization::PCLVisualizer::Ptr viewer, const std::string &text);
 void dp(int n);
 void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr);
-
-static int line_counter = 0;
-const int line_height = 12;
-const int line_default_offset = 15;
 
 
 /*
@@ -514,17 +509,6 @@ void meshFromPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, pcl::Poly
     // std::cerr << "Resulting cloud local: " << triangles.cloud.height << "x" << triangles.cloud.width << std::endl;
     dp(8);
 
-}
-
-
-
-/**
- * Displays given text in the bottom left corner, automatically placing it above text previously placed using this function
-*/
-void displayText(pcl::visualization::PCLVisualizer::Ptr viewer, const std::string &text) {
-    viewer->addText(text, 0, line_default_offset + line_counter * line_height);
-    std::cerr << line_counter << std::endl;
-    line_counter++;
 }
 
 void dp(int n) {
