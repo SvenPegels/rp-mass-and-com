@@ -12,9 +12,9 @@ Compute Bounding Box features.
 Computes AABB and OBB features.
 */
 void getBoundingBoxes(
-        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, 
-        pcl::PointXYZ AABB_min_point, pcl::PointXYZ AABB_max_point, 
-        pcl::PointXYZ OBB_min_point, pcl::PointXYZ OBB_max_point, pcl::PointXYZ OBB_pos, Eigen::Matrix3f OBB_rot
+        pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud_ptr, 
+        pcl::PointXYZ &AABB_min_point_out, pcl::PointXYZ &AABB_max_point_out, 
+        pcl::PointXYZ &OBB_min_point, pcl::PointXYZ &OBB_max_point_out, pcl::PointXYZ &OBB_pos, Eigen::Matrix3f &OBB_rot_out
         ) {
     // Compute features
     pcl::MomentOfInertiaEstimation<pcl::PointXYZ> feature_extractor;
@@ -22,6 +22,6 @@ void getBoundingBoxes(
     feature_extractor.compute();
 
     // Extract features
-    feature_extractor.getAABB(AABB_min_point, AABB_max_point);
-    feature_extractor.getOBB(OBB_min_point, OBB_max_point, OBB_pos, OBB_rot);
+    feature_extractor.getAABB(AABB_min_point_out, AABB_max_point_out);
+    feature_extractor.getOBB(OBB_min_point, OBB_max_point_out, OBB_pos, OBB_rot_out);
 }
