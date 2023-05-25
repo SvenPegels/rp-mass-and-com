@@ -7,7 +7,7 @@
 
 /*
 Reads the actual volume from a _data.txt file.
-Return the read volume, or -1 if something went wrong.
+Returns the volume, or -1 if something went wrong.
 Assumes that the file is formatted as such (has to be on the first line):
     ""
     Volume <actual volume>

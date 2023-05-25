@@ -1,4 +1,6 @@
-
+/**
+ * Everything to do with visuals
+*/
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/point_types.h>
 
@@ -13,13 +15,13 @@ const int line_default_offset = 15;
 /*
 Displays a wireframe AABB from 'min_point' to 'max_point'
 */
-void drawAABB(pcl::visualization::PCLVisualizer viewer, pcl::PointXYZ min_point, pcl::PointXYZ max_point, double r, double g, double b, std::string id) {
+void drawBoundingBox(pcl::visualization::PCLVisualizer viewer, pcl::PointXYZ min_point, pcl::PointXYZ max_point, double r, double g, double b, std::string id) {
     bool res = viewer.addCube(min_point.x, max_point.x, min_point.y, max_point.y, min_point.z, max_point.z, r,g,b, id);
     std::cerr << "AABB drawn? '" << res << "'" << std::endl;
     viewer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, id);
 }
 
-void drawAABB(pcl::visualization::PCLVisualizer::Ptr viewer_ptr, pcl::PointXYZ min_point, pcl::PointXYZ max_point, double r, double g, double b, std::string id) {
+void drawBoundingBox(pcl::visualization::PCLVisualizer::Ptr viewer_ptr, pcl::PointXYZ min_point, pcl::PointXYZ max_point, double r, double g, double b, std::string id) {
     bool res = viewer_ptr->addCube(min_point.x, max_point.x, min_point.y, max_point.y, min_point.z, max_point.z, r,g,b, id);
     std::cerr << "AABB drawn? '" << res << "'" << std::endl;
     viewer_ptr->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, id);
