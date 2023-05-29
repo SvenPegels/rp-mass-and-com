@@ -89,9 +89,22 @@ void estimateSurfaceNormals(pcl::PolygonMesh::Ptr mesh_ptr, pcl::PointCloud<pcl:
             Eigen::Vector3f vertex_normal_sum = p1_normal + p2_normal + p3_normal;
             float sign = vertex_normal_sum.dot(normal);
             if (/*normal is towards wrong direction*/ sign < 0.0f) {
+
+                std::cerr << std::endl;
+                std::cerr << "i=" << i << " START" << std::endl;
+                std::cerr << "p1_normal '" << p1_normal << "'" << std::endl;
+                std::cerr << "p2_normal '" << p2_normal << "'" << std::endl;
+                std::cerr << "p3_normal '" << p3_normal << "'" << std::endl;
+                std::cerr << "sr_normal '" << normal << "'" << std::endl;
+
+
                 n_flipped++;
                 if (debug_print) std::cerr << "FLIPPED" << std::endl;
                 normal = Eigen::Vector3f(-1*normal.x(),-1*normal.y(),-1*normal.z());
+
+
+                std::cerr << "sr_normal '" << normal << "'" << std::endl;
+                std::cerr << "i=" << i << " END" << std::endl;
             }
 
             // Correct direction by pointing surface normal towards the sum vector of the 3 vertices' normals
@@ -105,6 +118,9 @@ void estimateSurfaceNormals(pcl::PolygonMesh::Ptr mesh_ptr, pcl::PointCloud<pcl:
         centroid_normals_ptr_out->push_back(pcl::Normal(normal.x(), normal.y(), normal.z()));
         if (debug_print) std::cerr << std::endl;
     }
+    //TODO: Remove
+    std::cerr << std::endl;
+    
     if (correct_normals) std::cerr << "Normals flipped: '" << n_flipped << "'" << std::endl;
 }
 

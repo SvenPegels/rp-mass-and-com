@@ -147,7 +147,7 @@ int main (int argc, char** argv) {
     // Estimate centroid normals
     // Centroid normal is estimated using the cross product of the vectors from p1 to p2, and p1 to p3.
     pcl::PointCloud<pcl::Normal>::Ptr centroid_normals_ptr (new pcl::PointCloud<pcl::Normal>());
-    estimateSurfaceNormals(mesh_ptr, cloud_w_normals_ptr, centroid_normals_ptr);
+    estimateSurfaceNormals(mesh_ptr, cloud_w_normals_ptr, centroid_normals_ptr, true);
     
     // Combine centroid xyz and normal
     pcl::PointCloud<pcl::PointNormal>::Ptr surface_centroids_w_normals_ptr (new pcl::PointCloud<pcl::PointNormal>);
