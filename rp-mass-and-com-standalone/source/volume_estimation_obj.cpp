@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <thread>
+#include <vector>
 
 #include <pcl/common/common_headers.h>
 #include <pcl/features/normal_3d.h>
@@ -39,9 +40,6 @@
 
 using namespace std::chrono_literals;
 
-void meshFromPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, pcl::PolygonMesh::Ptr mesh_res_ptr);
-pcl::PolygonMesh meshFromPointCloud2(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr);
-pcl::PolygonMesh::Ptr meshFromPointCloud3(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr);
 void dp(int n);
 void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr);
 
@@ -164,6 +162,26 @@ int main (int argc, char** argv) {
 
 
     /*
+    Convex Hull
+    */
+    pcl::PointCloud<pcl::PointXYZ>::Ptr convex_hull_cloud_ptr (new pcl::PointCloud<pcl::PointXYZ>);
+    calcConvexHull3D(cloud_ptr, convex_hull_cloud_ptr);
+
+    pcl::PolygonMesh::Ptr convex_hull_mesh_ptr (new pcl::PolygonMesh);
+    double vol_chull = calcConvexHull3D(cloud_ptr, convex_hull_mesh_ptr);
+
+    // Visualize hull points
+    viewer_ptr->addPointCloud(convex_hull_cloud_ptr, "convex hull cloud");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.0, 1.0, "convex hull cloud");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "convex hull cloud");
+
+    // Visualize hull mesh
+    viewer_ptr->addPolygonMesh(*convex_hull_mesh_ptr, "convex hull mesh");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.5, 0.5, "convex hull mesh");
+    // viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, "convex hull mesh");
+
+
+    /*
     Display results
     */
     // Display sizes in the bottom left corner of the screen
@@ -171,6 +189,7 @@ int main (int argc, char** argv) {
     displayText(viewer_ptr, "AABB volume: " + std::to_string(vol_AABB));
     displayText(viewer_ptr, "OBB volume: " + std::to_string(vol_OBB));
     displayText(viewer_ptr, "Tetra volume: " + std::to_string(vol_tetra));
+    displayText(viewer_ptr, "Convex Hull volume: " + std::to_string(vol_chull));
     
 
     // Run until window is closed

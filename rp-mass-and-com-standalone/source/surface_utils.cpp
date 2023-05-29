@@ -1,8 +1,11 @@
+#pragma once
+
 /**
- * Everything to do with calculation surface features
+ * Everything to do with calculating surface features
  *  - Surface centroids
  *  - Surace normals from vertices
  *  - Adjust surface normals based on vertex normals
+ *  - Convex hull
 */
 
 #include "surface_utils.hpp"
@@ -126,6 +129,73 @@ Flips the normal 180 degrees
 */
 void flipNormal(Eigen::Vector3f &normal) {
     normal = Eigen::Vector3f(-1*normal.x(),-1*normal.y(),-1*normal.z());
+}
+
+
+/*
+Calculates a convex hull around the given 3D PointCloud.
+Outputs the vertices of the hull.
+*/
+void calcConvexHull3D(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, pcl::PointCloud<pcl::PointXYZ>::Ptr convex_hull_cloud_ptr_out) {
+    pcl::ConvexHull<pcl::PointXYZ> chull;
+    chull.setInputCloud (cloud_ptr);
+    chull.reconstruct (*convex_hull_cloud_ptr_out);
+}
+
+
+/*
+Calculates a convex hull around the given 3D PointCloud.
+Outputs the mesh of the hull/
+*/
+double calcConvexHull3D(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, pcl::PolygonMesh::Ptr convex_hull_mesh_ptr_out) {
+    pcl::ConvexHull<pcl::PointXYZ> chull;
+    chull.setInputCloud (cloud_ptr);
+    chull.setComputeAreaVolume(true);
+    chull.reconstruct (*convex_hull_mesh_ptr_out);
+    std::cerr << "Convex hull volume: '" << chull.getTotalVolume() << "'" << std::endl;
+    return chull.getTotalVolume();
+}
+
+
+/*
+Calculates a 2D convex hull around some projection of the given PointCloud.
+THIS IS FOR 2D.
+*/
+void calcConvexHull2D(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, pcl::PointCloud<pcl::PointXYZ>::Ptr convex_hull_ptr_out) {
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_projected_ptr (new pcl::PointCloud<pcl::PointXYZ>);
+
+    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+    pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+    // Create the segmentation object
+    pcl::SACSegmentation<pcl::PointXYZ> seg;
+    // Optional
+    seg.setOptimizeCoefficients (true);
+    // Mandatory
+    seg.setModelType (pcl::SACMODEL_PLANE);
+    seg.setMethodType (pcl::SAC_RANSAC);
+    seg.setDistanceThreshold (0.01);
+
+    seg.setInputCloud (cloud_ptr);
+    seg.segment (*inliers, *coefficients);
+    std::cerr << "PointCloud after segmentation has: " << inliers->indices.size () << " inliers." << std::endl;
+
+    // Project the model inliers
+    pcl::ProjectInliers<pcl::PointXYZ> proj;
+    proj.setModelType (pcl::SACMODEL_PLANE);
+    // proj.setIndices (inliers);
+    proj.setInputCloud (cloud_ptr);
+    proj.setModelCoefficients (coefficients);
+    proj.filter (*cloud_projected_ptr);
+    std::cerr << "PointCloud after projection has: " << cloud_projected_ptr->size () << " data points." << std::endl;
+
+    // Create a Convex Hull representation of the projected inliers
+    pcl::ConvexHull<pcl::PointXYZ> chull;
+    chull.setInputCloud (cloud_projected_ptr);
+    // chull.setAlpha (0.1);
+    chull.reconstruct (*convex_hull_ptr_out);
+
+    std::cerr << "Convex hull has: " << convex_hull_ptr_out->size() << " data points." << std::endl;
+
 }
 
 
