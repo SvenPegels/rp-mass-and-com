@@ -92,7 +92,7 @@ int main (int argc, char** argv) {
     // pcl::fromPCLPointCloud2(mesh_ptr->cloud, *cloud_w_normals_ptr);
 
     // Read actual size (assuming file only contains volume data)
-    float vol_actual = readActualVolume(argv[1]);
+    float vol_actual = readActualVolumeFromObjectFile(argv[1]);
 
 
     /*

@@ -48,12 +48,27 @@ void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr);
 ./volume_estimation_obj ~/rp-mass-and-com/pcd_files/rotated_torus.obj
 */
 /**
- * Usage: ./volume_estimation_obj <.obj file>
+ * Usage: ./volume_estimation_obj <.obj file> (<data file>)
  * Supports .obj files
 */
 int main (int argc, char** argv) {
-    if (argc < 2) {
-        std::cerr << "No .obj file argument given" << std::endl;
+    /*
+    Check arguments and retrieve data file path
+    */
+    std::string data_file_path;
+    if (argc >= 3) {
+        // .obj and data.txt given
+        data_file_path = argv[2];
+    } else if (argc >= 2) {
+        // .obj or data.txt not given. Likely only .obj
+        std::cerr << "No .obj or data file argument given. Assuming .obj is given. Defaulting to _data.txt for data." << std::endl;
+        if (dataFilePathFromObjectFilePath(argv[1], data_file_path) != 0) {
+            data_file_path = "OBJECT_FILE_NOT_SUPPORTED";
+            std::cerr << "Object file type not supported!" << std::endl;
+            return -1;
+        }
+    } else {
+        std::cerr << "No .obj file argument given!" << std::endl;
         return -1;
     }
 
@@ -90,7 +105,7 @@ int main (int argc, char** argv) {
     // pcl::fromPCLPointCloud2(mesh_ptr->cloud, *cloud_w_normals_ptr);
 
     // Read actual size (assuming file only contains volume data)
-    float vol_actual = readActualVolume(argv[1]);
+    float vol_actual = readActualVolumeFromDataFile(data_file_path);
 
 
     /*
