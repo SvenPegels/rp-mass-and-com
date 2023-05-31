@@ -1,426 +1,228 @@
+/**
+ * Volume estimation from .pcd files
+ * 
+ * For code consistency:
+ * - Visualizers as ::Ptr
+ * - PointClouds/Meshes/etc as ::Ptr
+ * - Single points not as ::Ptr. Passed as &reference to functions where necessary
+*/
+
 #include <pcl/features/moment_of_inertia_estimation.h>
 #include <pcl/point_types.h>
 
 #include <iostream>
 #include <thread>
+#include <vector>
 
 #include <pcl/common/common_headers.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/io/pcd_io.h>
+#include <pcl/io/ply_io.h>
+#include <pcl/io/obj_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/console/parse.h>
 
+// Surface estimation
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/surface/gp3.h>
 
-#include <string>
-// #include <sstring>
-#include <fstream>
+// Surface normal estimation
+#include <pcl/features/from_meshes.h>
+
+#include <pcl/common/transforms.h>
+
+/*Own code*/
+#include "data_reading.cpp"
+#include "visualization.cpp"
+#include "bounding_box.cpp"
+#include "volume_estimation.cpp"
+#include "surface_utils.cpp"
 
 #define OUTPUT_DIR ((std::string)"output/")
 
 using namespace std::chrono_literals;
 
-// void drawWireframeBox(pcl::visualization::PCLVisualizer::Ptr viewer, pcl::PointXYZ min, pcl::PointXYZ max, pcl::PointXYZ position);
-// void drawWireframeBox(pcl::visualization::PCLVisualizer::Ptr viewer, pcl::PointXYZ min, pcl::PointXYZ max, pcl::PointXYZ position, Eigen::Matrix3f rotation);
-// void calcAABBfromCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr);
-// void estimateOBBromCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr);
-// void viewerOneOff (pcl::visualization::PCLVisualizer& viewer);
-// void viewerPsycho (pcl::visualization::PCLVisualizer& viewer);
-void meshFromPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, pcl::PolygonMesh::Ptr mesh_res_ptr);
-pcl::PolygonMesh meshFromPointCloud2(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr);
-pcl::PolygonMesh::Ptr meshFromPointCloud3(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr);
-void displayText(pcl::visualization::PCLVisualizer::Ptr viewer, const std::string &text);
 void dp(int n);
-
-static int line_counter = 0;
-const int line_height = 12;
-const int line_default_offset = 15;
+void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr);
 
 
 /*
-./volume_estimation ~/rp-mass-and-com/pcd_files/rotated_scaled_cube.pcd
+./volume_estimation_pcd ~/rp-mass-and-com/pcd_files/rotated_torus.pcd
+*/
+/**
+ * Usage: ./volume_estimation_pcd <.pcd file> (<data file>)
+ * Supports .pcd files
 */
 int main (int argc, char** argv) {
-
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZ> ());
-    // Load cloud data
-    if (pcl::io::loadPCDFile(argv[1], *cloud_ptr) == -1) {
-        std::cerr << "No .pcd file given" << std::endl;
+    /*
+    Check arguments and retrieve data file path
+    */
+    std::string data_file_path;
+    if (argc >= 3) {
+        // .pcd and data.txt given
+        data_file_path = argv[2];
+    } else if (argc >= 2) {
+        // .pcd or data.txt not given. Likely only .pcd
+        std::cerr << "No .pcd or data file argument given. Assuming .pcd is given. Defaulting to _data.txt for data." << std::endl;
+        if (dataFilePathFromObjectFilePath(argv[1], data_file_path) != 0) {
+            data_file_path = "OBJECT_FILE_NOT_SUPPORTED";
+            std::cerr << "Object file type not supported!" << std::endl;
+            return -1;
+        }
+    } else {
+        std::cerr << "No .pcd file argument given!" << std::endl;
         return -1;
     }
 
 
     /*
-    Visualization
+    Loading 3d data
     */
-    // Convert cloud xyz to xyzrgb
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_xyzrgb_ptr (new pcl::PointCloud<pcl::PointXYZRGB>());
-    pcl::copyPointCloud(*cloud_ptr, *cloud_xyzrgb_ptr);
-    for (int i = 0; i < (*cloud_xyzrgb_ptr).points.size(); i++) {
-        (*cloud_xyzrgb_ptr).points[i].r = 255;
-        (*cloud_xyzrgb_ptr).points[i].g = 0;
-        (*cloud_xyzrgb_ptr).points[i].b = 0;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZ> ()); // TODO: Temp
+    // pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr (new pcl::PointCloud<pcl::PointNormal> ());
+    // pcl::PolygonMesh::Ptr mesh_ptr (new pcl::PolygonMesh);
+    // Load cloud data
+    // TODO: Extract point cloud from mesh instead
+    if (pcl::io::loadPCDFile(argv[1], *cloud_ptr) == 0) {
+        std::cerr << ".pcd file found" << std::endl;
+    } else {
+        std::cerr << "Could not load point cloud data from given .pcd file" << std::endl;
+        return -1;
     }
+    // // Load cloud and normal data
+    // if (pcl::io::loadPCDFile(argv[1], *cloud_w_normals_ptr) == 0) {
+    //     std::cerr << ".pcd file found" << std::endl;
+    // } else {
+    //     std::cerr << "Could not load point cloud and normal data from given .pcd file" << std::endl;
+    //     return -1;
+    // }
 
-    // Basic visualization setup
-    pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-    viewer->setBackgroundColor (0, 0, 0);
-        // pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> single_color(cloud, 0, 255, 0);
-        // viewer->addPointCloud<pcl::PointXYZ> (cloud, single_color, "sample cloud");
-    viewer->addPointCloud(cloud_xyzrgb_ptr);
-    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud");
-    viewer->addCoordinateSystem (1.0);
-    viewer->initCameraParameters ();
-    viewer->setCameraPosition(-5,5,-5, 0,0,0);
-    // Add center (0,0,0) sphere
-    viewer->addSphere((pcl::PointXYZ(0.0, 0.0, 0.0)), 0.05, "sphere", 0);
+    // Read actual size (assuming file only contains volume data)
+    float vol_actual = readActualVolumeFromDataFile(data_file_path);
+
+
+    /*
+    Visualization setup
+    */
+    pcl::visualization::PCLVisualizer::Ptr viewer_ptr (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+    initVisualizer(viewer_ptr);
+
+
+    /*
+    Visualize point cloud
+    */
+    viewer_ptr->addPointCloud(cloud_ptr, "cloud");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1.0, 0.0, 0.0, "cloud");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "cloud");
+
     
 
     /*
     AABB and OBB
     */
-    // Data calc setup
-    pcl::MomentOfInertiaEstimation<pcl::PointXYZ> feature_extractor;
-    feature_extractor.setInputCloud(cloud_ptr);
-    feature_extractor.compute();
+    // Get bounding box data
+    pcl::PointXYZ AABB_min_point;
+    pcl::PointXYZ AABB_max_point;
+    pcl::PointXYZ OBB_min_point;
+    pcl::PointXYZ OBB_max_point;
+    pcl::PointXYZ OBB_pos;
+    Eigen::Matrix3f OBB_rot;
+    getBoundingBoxes(cloud_ptr, AABB_min_point, AABB_max_point, OBB_min_point, OBB_max_point, OBB_pos, OBB_rot);
 
-    // Extract AABB data
-    pcl::PointXYZ min_point_AABB;
-    pcl::PointXYZ max_point_AABB;
-    feature_extractor.getAABB(min_point_AABB, max_point_AABB);
-
-    // Extract OBB data
-    pcl::PointXYZ min_point_OBB;
-    pcl::PointXYZ max_point_OBB;
-    pcl::PointXYZ position_OBB;
-    Eigen::Matrix3f rotational_matrix_OBB;
-    feature_extractor.getOBB(min_point_OBB, max_point_OBB, position_OBB, rotational_matrix_OBB);
-
-    // Draw AABB as wireframe
-    viewer->addCube(min_point_AABB.x, max_point_AABB.x, min_point_AABB.y, max_point_AABB.y, min_point_AABB.z, max_point_AABB.z, 1.0, 1.0, 1.0, "AABB");
-    viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, "AABB");
-    // Draw OBB as a cube, at 'position', with rotation 'rot_quat', with vertex lengths, displayed as a wireframe
-    Eigen::Vector3f position (position_OBB.x, position_OBB.y, position_OBB.z);
-    Eigen::Quaternionf rot_quat (rotational_matrix_OBB);
-    viewer->addCube (position, rot_quat, max_point_OBB.x - min_point_OBB.x, max_point_OBB.y - min_point_OBB.y, max_point_OBB.z - min_point_OBB.z, "OBB");
-    viewer->setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, "OBB");
-
-
-    // Read actual size (assuming file only contains volume data)
-    float vol_actual = -1;
-    std::string type;
-    // Get data file name
-    std::string data_file_name = argv[1];
-    size_t start_pos = data_file_name.find(".pcd"); // Should check using std::string::npos, but would have failed already anyway if not a .pcd file
-    data_file_name.replace(start_pos, 4, "_data.txt");
-    std::cerr << "data_file_name '" << data_file_name << "'" << std::endl;
-    // Open file
-    std::ifstream in(data_file_name);
-    if (in.fail()) {
-        std::cerr << "Data file '" << data_file_name << "' not found" << std::endl; 
-    } else {
-        in >> type >> vol_actual;
-        std::cerr << "read data '" << type << " : " << vol_actual << "'" << std::endl;
-    }
-    in.close();
-
-    // Calculate size
-    float vol_AABB = (max_point_AABB.x - min_point_AABB.x)*(max_point_AABB.y - min_point_AABB.y)*(max_point_AABB.z - min_point_AABB.z);
-    float vol_OBB = (max_point_OBB.x - min_point_OBB.x)*(max_point_OBB.y - min_point_OBB.y)*(max_point_OBB.z - min_point_OBB.z);
-
-    // Display size
-    displayText(viewer, "Actual volume: " + std::to_string(vol_actual));
-    displayText(viewer, "AABB volume: " + std::to_string(vol_AABB));
-    displayText(viewer, "OBB volume: " + std::to_string(vol_OBB));
-
-
-
-
-    {
-        /*
-        Greedy triangulation
-        */
-        pcl::PolygonMesh::Ptr mesh_ptr (new pcl::PolygonMesh);
-        pcl::PolygonMesh mesh;
-        dp(0);
-        meshFromPointCloud(cloud_ptr, mesh_ptr);
-        std::cerr << "Resulting cloud param: " << mesh_ptr->cloud.height << "x" << mesh_ptr->cloud.width << std::endl;
-        mesh = meshFromPointCloud2(cloud_ptr);
-        std::cerr << "Resulting cloud param: " << mesh.cloud.height << "x" << mesh.cloud.width << std::endl;
-            // Estimate normals
-        pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normal_est;
-        pcl::PointCloud<pcl::Normal>::Ptr normals_ptr (new pcl::PointCloud<pcl::Normal>);
-        pcl::search::KdTree<pcl::PointXYZ>::Ptr tree_ptr (new pcl::search::KdTree<pcl::PointXYZ>);
-        tree_ptr->setInputCloud (cloud_ptr);
-        normal_est.setInputCloud (cloud_ptr);
-        normal_est.setSearchMethod (tree_ptr);
-        normal_est.setKSearch (20);
-        normal_est.compute (*normals_ptr);
-        dp(1);
-
-        // viewer->addPointCloudNormals(normals_ptr);
-
-        // Concatenate the XYZ and normal fields*
-        pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals (new pcl::PointCloud<pcl::PointNormal>);
-        pcl::concatenateFields (*cloud_ptr, *normals_ptr, *cloud_with_normals);
-        dp(2);
-
-        // viewer->addPointCloudNormals(cloud_with_normals);
-        viewer->addPointCloudNormals<pcl::PointNormal>(cloud_with_normals, 1, 0.05f, "cloud with normals");
-
-        // Create search tree
-        pcl::search::KdTree<pcl::PointNormal>::Ptr tree2 (new pcl::search::KdTree<pcl::PointNormal>);
-        tree2->setInputCloud (cloud_with_normals);
-        dp(3);
-
-        // Initialize objects
-        pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
-        // pcl::PolygonMesh triangles;
-
-        // Set the maximum distance between connected points (maximum edge length)
-        gp3.setSearchRadius (0.025);
-
-        // Set typical values for the parameters
-        gp3.setMu (2.5);
-        gp3.setMaximumNearestNeighbors (100);
-        gp3.setMaximumSurfaceAngle(M_PI/4); // 45 degrees
-        gp3.setMinimumAngle(M_PI/18); // 10 degrees
-        gp3.setMaximumAngle(2*M_PI/3); // 120 degrees
-        gp3.setNormalConsistency(false);
-        dp(40);
-
-        // Get result
-        gp3.setInputCloud (cloud_with_normals);
-        gp3.setSearchMethod (tree2);
-        dp(41);
-        // gp3.reconstruct (*mesh_ptr);
-        gp3.reconstruct(mesh);
-        dp(5);
-
-        // Additional vertex information
-        std::vector<int> parts = gp3.getPartIDs();
-        dp(6);
-        std::vector<int> states = gp3.getPointStates();
-        dp(7);
-
-        std::cerr << "Resulting cloud param: " << mesh_ptr->cloud.height << "x" << mesh_ptr->cloud.width << std::endl;
-        // std::cerr << "Resulting cloud local: " << triangles.cloud.height << "x" << triangles.cloud.width << std::endl;
-        dp(8);
-
-        // Display mesh
-        viewer->addPolygonMesh(*mesh_ptr);
-        viewer->addPolygonMesh(mesh);
+    // Draw AABB in blue
+    drawBoundingBox(viewer_ptr, AABB_min_point, AABB_max_point, 0.0, 0.0, 1.0, "AABB");
+    // Draw OBB in red
+    drawBoundingBox(viewer_ptr, OBB_min_point, OBB_max_point, OBB_pos, OBB_rot, 1.0, 0.0, 0.0, "OBB");
     
-    }
-    dp(00);
+    // Calculate size
+    float vol_AABB = calcBoxVolume(AABB_min_point, AABB_max_point);
+    float vol_OBB = calcBoxVolume(OBB_min_point, OBB_max_point);
+
+    // Calculate AABB center point (average of AABB min and max)
+    pcl::PointXYZ AABB_center_point = pcl::PointXYZ((AABB_min_point.x+AABB_max_point.x)/2, (AABB_min_point.y+AABB_max_point.y)/2, (AABB_min_point.z+AABB_max_point.z)/2);
+    
+
+    /*
+    Convex Hull
+    //TODO: Clean up code
+    */
+    pcl::PointCloud<pcl::PointXYZ>::Ptr convex_hull_cloud_ptr (new pcl::PointCloud<pcl::PointXYZ>);
+    calcConvexHull3D(cloud_ptr, convex_hull_cloud_ptr);
+
+    pcl::PolygonMesh::Ptr convex_hull_mesh_ptr (new pcl::PolygonMesh);
+    double vol_chull = calcConvexHull3D(cloud_ptr, convex_hull_mesh_ptr);
+
+    // Visualize hull points
+    viewer_ptr->addPointCloud(convex_hull_cloud_ptr, "convex hull cloud");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.0, 1.0, "convex hull cloud");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "convex hull cloud");
+
+    // // Create translated hull mesh to
+    // pcl::PointCloud<pcl::PointXYZ>::Ptr convex_hull_mesh_points_ptr (new pcl::PointCloud<pcl::PointXYZ>);
+    // pcl::fromPCLPointCloud2(convex_hull_mesh_ptr->cloud, *convex_hull_mesh_points_ptr);
+    // /*  METHOD #2: Using a Affine3f
+    //  This method is easier and less error prone
+    // */
+    // Eigen::Affine3f transform_2 = Eigen::Affine3f::Identity();
+
+    // // Define a translation of 2.5 meters on the x axis.
+    // transform_2.translation() << 2.5, 0.0, 0.0;
+
+    // // The same rotation matrix as before; theta radians around Z axis
+    // // transform_2.rotate (Eigen::AngleAxisf (theta, Eigen::Vector3f::UnitZ()));
+    // // Print the transformation
+    // printf ("\nMethod #2: using an Affine3f\n");
+    // std::cout << transform_2.matrix() << std::endl;
+
+    // // Executing the transformation
+    // pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZ> ());
+    // // You can either apply transform_1 or transform_2; they are the same
+    // pcl::transformPointCloud (*convex_hull_mesh_points_ptr, *transformed_cloud, transform_2);
+    // // pcl::PointCloud<pcl::PointXYZ>::ConstPtr transformed_cloud2 (new pcl::PointCloud<pcl::PointXYZ>(*transformed_cloud));
+    // viewer_ptr->addPolygonMesh<pcl::PointXYZ>(transformed_cloud, convex_hull_mesh_ptr->polygons, "convex hull mesh translated");
+    // // viewer_ptr->addPolygonMesh()
+
+    // Visualize hull mesh
+    viewer_ptr->addPolygonMesh(*convex_hull_mesh_ptr, "convex hull mesh");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.5, 0.5, "convex hull mesh");
+    // viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, "convex hull mesh");
+
+
+    /*
+    Display results
+    */
+    // Display volumes in the bottom left corner of the screen
+    displayText(viewer_ptr, "Actual volume: " + std::to_string(vol_actual));
+    displayText(viewer_ptr, "AABB volume: " + std::to_string(vol_AABB));
+    displayText(viewer_ptr, "OBB volume: " + std::to_string(vol_OBB));
+    displayText(viewer_ptr, "Convex Hull volume: " + std::to_string(vol_chull));
+
+    // Print volumes
+    std::cerr << "Actual volume: '" << vol_actual << "'" << std::endl;
+    std::cerr << "AABB volume: '" << vol_AABB << "'" << std::endl;
+    std::cerr << "OBB volume: '" << vol_OBB << "'" << std::endl;
+    std::cerr << "Convex Hull volume: '" << vol_chull << "'" << std::endl;
     
 
     // Run until window is closed
-    while (!viewer->wasStopped()) {
-        viewer->spinOnce(100);
+    while (!viewer_ptr->wasStopped()) {
+        viewer_ptr->spinOnce(100);
         std::this_thread::sleep_for(100ms);
     }
 }
 
-/**
- * Creates a mesh from the given point cloud using a Greedy Triangulation Algorithm
- * Taken from: https://pcl.readthedocs.io/projects/tutorials/en/latest/greedy_projection.html
- * See refernce for more info:
-  @InProceedings{Marton09ICRA,
-  author    = {Zoltan Csaba Marton and Radu Bogdan Rusu and Michael Beetz},
-  title     = {{On Fast Surface Reconstruction Methods for Large and Noisy Datasets}},
-  booktitle = {Proceedings of the IEEE International Conference on Robotics and Automation (ICRA)},
-  month     = {May 12-17},
-  year      = {2009},
-  address   = {Kobe, Japan},
-    }
-*/
-void meshFromPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, pcl::PolygonMesh::Ptr mesh_res_ptr) {
-    // Estimate normals
-    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normal_est;
-    pcl::PointCloud<pcl::Normal>::Ptr normals_ptr (new pcl::PointCloud<pcl::Normal>);
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree_ptr (new pcl::search::KdTree<pcl::PointXYZ>);
-    tree_ptr->setInputCloud (cloud_ptr);
-    normal_est.setInputCloud (cloud_ptr);
-    normal_est.setSearchMethod (tree_ptr);
-    normal_est.setKSearch (20);
-    normal_est.compute (*normals_ptr);
-    dp(1);
-
-    // Concatenate the XYZ and normal fields*
-    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals (new pcl::PointCloud<pcl::PointNormal>);
-    pcl::concatenateFields (*cloud_ptr, *normals_ptr, *cloud_with_normals);
-    dp(2);
-
-    // Create search tree
-    pcl::search::KdTree<pcl::PointNormal>::Ptr tree2 (new pcl::search::KdTree<pcl::PointNormal>);
-    tree2->setInputCloud (cloud_with_normals);
-    dp(3);
-
-    // Initialize objects
-    pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
-    // pcl::PolygonMesh triangles;
-
-    // Set the maximum distance between connected points (maximum edge length)
-    gp3.setSearchRadius (0.025);
-
-    // Set typical values for the parameters
-    gp3.setMu (2.5);
-    gp3.setMaximumNearestNeighbors (100);
-    gp3.setMaximumSurfaceAngle(M_PI/4); // 45 degrees
-    gp3.setMinimumAngle(M_PI/18); // 10 degrees
-    gp3.setMaximumAngle(2*M_PI/3); // 120 degrees
-    gp3.setNormalConsistency(false);
-    dp(40);
-
-    // Get result
-    gp3.setInputCloud (cloud_with_normals);
-    gp3.setSearchMethod (tree2);
-    dp(41);
-    gp3.reconstruct (*mesh_res_ptr);
-    // gp3.reconstruct(triangles);
-    dp(5);
-
-    // Additional vertex information
-    std::vector<int> parts = gp3.getPartIDs();
-    dp(6);
-    std::vector<int> states = gp3.getPointStates();
-    dp(7);
-
-    std::cerr << "Resulting cloud param: " << mesh_res_ptr->cloud.height << "x" << mesh_res_ptr->cloud.width << std::endl;
-    // std::cerr << "Resulting cloud local: " << triangles.cloud.height << "x" << triangles.cloud.width << std::endl;
-    dp(8);
-
-}
-
-pcl::PolygonMesh meshFromPointCloud2(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr) {
-    // Estimate normals
-    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normal_est;
-    pcl::PointCloud<pcl::Normal>::Ptr normals_ptr (new pcl::PointCloud<pcl::Normal>);
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree_ptr (new pcl::search::KdTree<pcl::PointXYZ>);
-    tree_ptr->setInputCloud (cloud_ptr);
-    normal_est.setInputCloud (cloud_ptr);
-    normal_est.setSearchMethod (tree_ptr);
-    normal_est.setKSearch (20);
-    normal_est.compute (*normals_ptr);
-    dp(1);
-
-    // Concatenate the XYZ and normal fields*
-    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals (new pcl::PointCloud<pcl::PointNormal>);
-    pcl::concatenateFields (*cloud_ptr, *normals_ptr, *cloud_with_normals);
-    dp(2);
-
-    // Create search tree
-    pcl::search::KdTree<pcl::PointNormal>::Ptr tree2 (new pcl::search::KdTree<pcl::PointNormal>);
-    tree2->setInputCloud (cloud_with_normals);
-    dp(3);
-
-    // Initialize objects
-    pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
-    pcl::PolygonMesh triangles;
-
-    // Set the maximum distance between connected points (maximum edge length)
-    gp3.setSearchRadius (0.025);
-
-    // Set typical values for the parameters
-    gp3.setMu (2.5);
-    gp3.setMaximumNearestNeighbors (100);
-    gp3.setMaximumSurfaceAngle(M_PI/4); // 45 degrees
-    gp3.setMinimumAngle(M_PI/18); // 10 degrees
-    gp3.setMaximumAngle(2*M_PI/3); // 120 degrees
-    gp3.setNormalConsistency(false);
-    dp(40);
-
-    // Get result
-    gp3.setInputCloud (cloud_with_normals);
-    gp3.setSearchMethod (tree2);
-    dp(41);
-    // gp3.reconstruct (*mesh_res_ptr);
-    gp3.reconstruct(triangles);
-    dp(5);
-
-    // Additional vertex information
-    std::vector<int> parts = gp3.getPartIDs();
-    dp(6);
-    std::vector<int> states = gp3.getPointStates();
-    dp(7);
-
-    // std::cerr << "Resulting cloud param: " << mesh_res_ptr->cloud.height << "x" << mesh_res_ptr->cloud.width << std::endl;
-    std::cerr << "Resulting cloud local: " << triangles.cloud.height << "x" << triangles.cloud.width << std::endl;
-    dp(8);
-    return triangles;
-}
-
-
-pcl::PolygonMesh::Ptr meshFromPointCloud3(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr) {
-    // Estimate normals
-    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normal_est;
-    pcl::PointCloud<pcl::Normal>::Ptr normals_ptr (new pcl::PointCloud<pcl::Normal>);
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree_ptr (new pcl::search::KdTree<pcl::PointXYZ>);
-    tree_ptr->setInputCloud (cloud_ptr);
-    normal_est.setInputCloud (cloud_ptr);
-    normal_est.setSearchMethod (tree_ptr);
-    normal_est.setKSearch (20);
-    normal_est.compute (*normals_ptr);
-    dp(1);
-
-    // Concatenate the XYZ and normal fields*
-    pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals (new pcl::PointCloud<pcl::PointNormal>);
-    pcl::concatenateFields (*cloud_ptr, *normals_ptr, *cloud_with_normals);
-    dp(2);
-
-    // Create search tree
-    pcl::search::KdTree<pcl::PointNormal>::Ptr tree2 (new pcl::search::KdTree<pcl::PointNormal>);
-    tree2->setInputCloud (cloud_with_normals);
-    dp(3);
-
-    // Initialize objects
-    pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
-    pcl::PolygonMesh::Ptr triangles;
-
-    // Set the maximum distance between connected points (maximum edge length)
-    gp3.setSearchRadius (0.025);
-
-    // Set typical values for the parameters
-    gp3.setMu (2.5);
-    gp3.setMaximumNearestNeighbors (100);
-    gp3.setMaximumSurfaceAngle(M_PI/4); // 45 degrees
-    gp3.setMinimumAngle(M_PI/18); // 10 degrees
-    gp3.setMaximumAngle(2*M_PI/3); // 120 degrees
-    gp3.setNormalConsistency(false);
-    dp(40);
-
-    // Get result
-    gp3.setInputCloud (cloud_with_normals);
-    gp3.setSearchMethod (tree2);
-    dp(41);
-    // gp3.reconstruct (*mesh_res_ptr);
-    gp3.reconstruct(*triangles);
-    dp(5);
-
-    // Additional vertex information
-    std::vector<int> parts = gp3.getPartIDs();
-    dp(6);
-    std::vector<int> states = gp3.getPointStates();
-    dp(7);
-
-    // std::cerr << "Resulting cloud param: " << mesh_res_ptr->cloud.height << "x" << mesh_res_ptr->cloud.width << std::endl;
-    std::cerr << "Resulting cloud local: " << triangles->cloud.height << "x" << triangles->cloud.width << std::endl;
-    dp(8);
-    return triangles;
-}
-
-/**
- * Displays given text in the bottom left corner, automatically placing it above previously displayed text
-*/
-void displayText(pcl::visualization::PCLVisualizer::Ptr viewer, const std::string &text) {
-    viewer->addText(text, 0, line_default_offset + line_counter * line_height);
-    std::cerr << line_counter << std::endl;
-    line_counter++;
-}
-
-
 void dp(int n) {
     std::cerr << "Here " << n << std::endl;
+}
+
+/*
+Initializes PCLVisualizer with preferred values
+*/
+void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr) {
+    viewer_ptr->setBackgroundColor (0, 0, 0);
+    viewer_ptr->addCoordinateSystem (1.0);
+    viewer_ptr->initCameraParameters ();
+    viewer_ptr->setCameraPosition(-5,5,-5, 0,0,0);
+    // Add center (0,0,0) sphere
+    viewer_ptr->addSphere((pcl::PointXYZ(0.0, 0.0, 0.0)), 0.05, "sphere", 0);
 }
