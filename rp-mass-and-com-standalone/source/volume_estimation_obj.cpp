@@ -51,7 +51,7 @@ void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr);
 */
 /**
  * Usage: ./volume_estimation_obj <.obj file> (<data file>)
- * Supports .obj files
+ * Supports .obj and .ply files
 */
 int main (int argc, char** argv) {
     /*
@@ -76,34 +76,65 @@ int main (int argc, char** argv) {
 
 
     /*
-    Loading 3d data
+    Load 3d data
     */
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZ> ()); // TODO: Temp
     pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr (new pcl::PointCloud<pcl::PointNormal> ());
     pcl::PolygonMesh::Ptr mesh_ptr (new pcl::PolygonMesh);
-    // Load cloud data
-    // TODO: Extract point cloud from mesh instead
+
+    std::string threed_data_file = std::string(argv[1]);
+
+    // Load data from .obj, if given file is a .obj file
+    if (threed_data_file.find(".obj") != std::string::npos) {
+        // Load cloud
     if (pcl::io::loadOBJFile(argv[1], *cloud_ptr) == 0) {
         std::cerr << ".obj file found" << std::endl;
     } else {
         std::cerr << "Could not load point cloud data from given .obj file" << std::endl;
         return -1;
     }
-    // Load cloud and normal data
+        // Load cloud and normals
     if (pcl::io::loadOBJFile(argv[1], *cloud_w_normals_ptr) == 0) {
         std::cerr << ".obj file found" << std::endl;
     } else {
         std::cerr << "Could not load point cloud and normal data from given .obj file" << std::endl;
         return -1;
     }
-    // Load mesh data
+        // Load mesh
     if (pcl::io::loadOBJFile(argv[1], *mesh_ptr) == 0) {
         std::cerr << ".obj file found" << std::endl;
     } else {
         std::cerr << "Could not load mesh data from given .obj file" << std::endl;
         return -1;
+        }
     }
-    pcl::fromPCLPointCloud2(mesh_ptr->cloud, *cloud_ptr);
+
+    // Load data from .ply, if given file is a .ply file
+    if (threed_data_file.find(".ply") != std::string::npos) {
+        // Load cloud
+        if (pcl::io::loadPLYFile(argv[1], *cloud_ptr) == 0) {
+        std::cerr << ".ply file found" << std::endl;
+        } else {
+            std::cerr << "Could not load point cloud data from given .ply file" << std::endl;
+            return -1;
+        }
+        // Load cloud and normals
+        if (pcl::io::loadPLYFile(argv[1], *cloud_w_normals_ptr) == 0) {
+            std::cerr << ".ply file found" << std::endl;
+        } else {
+            std::cerr << "Could not load point cloud and normal data from given .ply file" << std::endl;
+            return -1;
+        }
+        // Load mesh
+        if (pcl::io::loadPLYFile(argv[1], *mesh_ptr) == 0) {
+            std::cerr << ".ply file found" << std::endl;
+        } else {
+            std::cerr << "Could not load mesh data from given .ply file" << std::endl;
+            return -1;
+        }
+    }
+
+    // pcl::fromPCLPointCloud2(mesh_ptr->cloud, *cloud_ptr);
     // pcl::fromPCLPointCloud2(mesh_ptr->cloud, *cloud_w_normals_ptr);
 
     // Read actual size (assuming file only contains volume data)
