@@ -16,3 +16,6 @@ add_executable (volume_estimation_ply volume_estimation_ply.cpp)
 target_link_libraries(volume_estimation_ply ${PCL_LIBRARIES})
 add_executable (volume_estimation_obj ${SOURCES_FILES_LIBS} volume_estimation_obj.cpp)
 target_link_libraries(volume_estimation_obj ${PCL_LIBRARIES})
+
+add_executable (visualize_partial_view ${SOURCES_FILES_LIBS} visualize_partial_view.cpp)
+target_link_libraries(visualize_partial_view ${PCL_LIBRARIES})
