@@ -29,6 +29,8 @@
 // Surface normal estimation
 #include <pcl/features/from_meshes.h>
 
+#include <pcl/common/transforms.h>
+
 /*Own code*/
 #include "data_reading.cpp"
 #include "visualization.cpp"
@@ -137,6 +139,9 @@ int main (int argc, char** argv) {
     // Calculate size
     float vol_AABB = calcBoxVolume(AABB_min_point, AABB_max_point);
     float vol_OBB = calcBoxVolume(OBB_min_point, OBB_max_point);
+
+    // Calculate AABB center point (average of AABB min and max)
+    pcl::PointXYZ AABB_center_point = pcl::PointXYZ((AABB_min_point.x+AABB_max_point.x)/2, (AABB_min_point.y+AABB_max_point.y)/2, (AABB_min_point.z+AABB_max_point.z)/2);
     
 
     /*
@@ -172,7 +177,7 @@ int main (int argc, char** argv) {
 
     // Calculate volume
     pcl::index_t offset = 0;
-    float vol_tetra = calcMeshVolumeTetrahedron(mesh_ptr, cloud_ptr, centroid_normals_ptr);
+    float vol_tetra = calcMeshVolumeTetrahedron(mesh_ptr, cloud_ptr, centroid_normals_ptr, AABB_center_point);
     std::cerr << "Total tetra vol: '" << vol_tetra << "'" << std::endl;
 
 
@@ -190,10 +195,21 @@ int main (int argc, char** argv) {
     viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.0, 1.0, "convex hull cloud");
     viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "convex hull cloud");
 
+    // // Create translated hull mesh
+    // pcl::PointCloud<pcl::PointXYZ>::Ptr convex_hull_mesh_points_ptr (new pcl::PointCloud<pcl::PointXYZ>);
+    // pcl::fromPCLPointCloud2(convex_hull_mesh_ptr->cloud, *convex_hull_mesh_points_ptr);
+    
+    // Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+    // transform.translation() << 2.5, 0.0, 0.0;
+
+    // // Translate and visualise translated hull mesh
+    // pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud (new pcl::PointCloud<pcl::PointXYZ> ());
+    // pcl::transformPointCloud (*convex_hull_mesh_points_ptr, *transformed_cloud, transform);
+    // viewer_ptr->addPolygonMesh<pcl::PointXYZ>(transformed_cloud, convex_hull_mesh_ptr->polygons, "convex hull mesh translated");
+
     // Visualize hull mesh
     viewer_ptr->addPolygonMesh(*convex_hull_mesh_ptr, "convex hull mesh");
     viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.5, 0.5, "convex hull mesh");
-    // viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_REPRESENTATION, pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, "convex hull mesh");
 
 
     /*
