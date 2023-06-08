@@ -4,6 +4,9 @@
 #include <string>
 // for std::ifstream
 #include <fstream>
+#include <pcl/io/ply_io.h>
+#include <pcl/io/obj_io.h>
+#include <pcl/io/pcd_io.h>
 
 
 /*
@@ -38,3 +41,31 @@ Assumes that the file is formatted as such (has to be on the first line):
     *Any single word instead of 'Volume' will work, but use Volume for clarity and future proofing.
 */
 float readActualVolumeFromDataFile(std::string data_file_path);
+
+
+/*
+Reads the actual Center of Mass from a _data.txt file, given the .pcd/.ply/.obj file path.
+Returns -1 if something went wrong, 0 otherwise.
+*/
+int readActualCoMFromDataFile(std::string data_file_path, pcl::PointXYZ &com_out);
+
+
+/*
+Loads the XYZ point cloud, XYZ point cloud with normals, and mesh from the given .obj file.
+returns -1 if something went wrong, 0 otherwise.
+*/
+int loadOBJData(std::string threed_file_path, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr_out, pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr_out, pcl::PolygonMesh::Ptr mesh_ptr_out);
+
+
+/*
+Loads the XYZ point cloud, XYZ point cloud with normals, and mesh from the given .ply file.
+returns -1 if something went wrong, 0 otherwise.
+*/
+int loadPLYData(std::string threed_file_path, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr_out, pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr_out, pcl::PolygonMesh::Ptr mesh_ptr_out);
+
+
+/*
+Loads the XYZ point cloud and XYZ point cloud with normals.pcd file.
+returns -1 if something went wrong, 0 otherwise.
+*/
+int loadPCDData(std::string threed_file_path, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr_out, pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr_out);

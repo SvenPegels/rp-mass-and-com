@@ -1,5 +1,5 @@
 /**
- * Volume estimation from .obj files
+ * Volume estimation from .obj and .ply files
  * 
  * For code consistency:
  * - Visualizers as ::Ptr
@@ -7,7 +7,6 @@
  * - Single points not as ::Ptr. Passed as &reference to functions where necessary
 */
 
-#include <pcl/features/moment_of_inertia_estimation.h>
 #include <pcl/point_types.h>
 
 #include <iostream>
@@ -16,18 +15,12 @@
 
 #include <pcl/common/common_headers.h>
 #include <pcl/features/normal_3d.h>
-#include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/io/obj_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/console/parse.h>
 
-// Surface estimation
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/surface/gp3.h>
-
 // Surface normal estimation
-#include <pcl/features/from_meshes.h>
 
 #include <pcl/common/transforms.h>
 
@@ -82,56 +75,16 @@ int main (int argc, char** argv) {
     pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr (new pcl::PointCloud<pcl::PointNormal> ());
     pcl::PolygonMesh::Ptr mesh_ptr (new pcl::PolygonMesh);
 
-    std::string threed_data_file = std::string(argv[1]);
+    std::string threed_file_path = std::string(argv[1]);
 
     // Load data from .obj, if given file is a .obj file
-    if (threed_data_file.find(".obj") != std::string::npos) {
-        // Load cloud
-    if (pcl::io::loadOBJFile(argv[1], *cloud_ptr) == 0) {
-        std::cerr << ".obj file found" << std::endl;
-    } else {
-        std::cerr << "Could not load point cloud data from given .obj file" << std::endl;
-        return -1;
-    }
-        // Load cloud and normals
-    if (pcl::io::loadOBJFile(argv[1], *cloud_w_normals_ptr) == 0) {
-        std::cerr << ".obj file found" << std::endl;
-    } else {
-        std::cerr << "Could not load point cloud and normal data from given .obj file" << std::endl;
-        return -1;
-    }
-        // Load mesh
-    if (pcl::io::loadOBJFile(argv[1], *mesh_ptr) == 0) {
-        std::cerr << ".obj file found" << std::endl;
-    } else {
-        std::cerr << "Could not load mesh data from given .obj file" << std::endl;
-        return -1;
-        }
+    if (threed_file_path.find(".obj") != std::string::npos) {
+        loadOBJData(threed_file_path, cloud_ptr, cloud_w_normals_ptr, mesh_ptr);
     }
 
     // Load data from .ply, if given file is a .ply file
-    if (threed_data_file.find(".ply") != std::string::npos) {
-        // Load cloud
-        if (pcl::io::loadPLYFile(argv[1], *cloud_ptr) == 0) {
-        std::cerr << ".ply file found" << std::endl;
-        } else {
-            std::cerr << "Could not load point cloud data from given .ply file" << std::endl;
-            return -1;
-        }
-        // Load cloud and normals
-        if (pcl::io::loadPLYFile(argv[1], *cloud_w_normals_ptr) == 0) {
-            std::cerr << ".ply file found" << std::endl;
-        } else {
-            std::cerr << "Could not load point cloud and normal data from given .ply file" << std::endl;
-            return -1;
-        }
-        // Load mesh
-        if (pcl::io::loadPLYFile(argv[1], *mesh_ptr) == 0) {
-            std::cerr << ".ply file found" << std::endl;
-        } else {
-            std::cerr << "Could not load mesh data from given .ply file" << std::endl;
-            return -1;
-        }
+    if (threed_file_path.find(".ply") != std::string::npos) {
+        loadPLYData(threed_file_path, cloud_ptr, cloud_w_normals_ptr, mesh_ptr);
     }
 
     // pcl::fromPCLPointCloud2(mesh_ptr->cloud, *cloud_ptr);
@@ -207,7 +160,6 @@ int main (int argc, char** argv) {
     viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.5, 0.0, 0.0, "centroid normals");
 
     // Calculate volume
-    pcl::index_t offset = 0;
     float vol_tetra = calcMeshVolumeTetrahedron(mesh_ptr, cloud_ptr, centroid_normals_ptr, AABB_center_point);
     std::cerr << "Total tetra vol: '" << vol_tetra << "'" << std::endl;
 

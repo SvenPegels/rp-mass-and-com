@@ -72,13 +72,131 @@ float readActualVolumeFromDataFile(std::string data_file_path) {
     // Open file
     std::ifstream in(data_file_path);
     if (in.fail()) {
-        std::cerr << "Data file '" << data_file_path << "' not found" << std::endl; 
+        std::cerr << "Data file '" << data_file_path << "' not found" << std::endl;
+        return -1;
     } else {
-        // Read volume data
-        in >> type >> vol_actual;
+        // Read Volume data
+        in >> type;
+        while (type != "Volume") {
+            in >> type;
+        }
+        in >> vol_actual;
         std::cerr << "read data '" << type << " : " << vol_actual << "'" << std::endl;
     }
     in.close();
 
     return vol_actual;
+}
+
+
+/*
+Reads the actual Center of Mass from a _data.txt file, given the .pcd/.ply/.obj file path.
+Returns -1 if something went wrong, 0 otherwise.
+*/
+int readActualCoMFromDataFile(std::string data_file_path, pcl::PointXYZ &com_out) {
+    std::string type;
+    float x,y,z;
+
+    std::ifstream in(data_file_path);
+    if (in.fail()) {
+        std::cerr << "Data file '" << data_file_path << "' not found" << std::endl; 
+        return -1;
+    } else {
+        // Read CoM data
+        in >> type;
+        while (type != "CoM") {
+            in >> type;
+        }
+        in >> x >> y >> z;
+        std::cerr << "read data '" << type << " : (" << x << " , " << y << " , " << z << ")'" << std::endl;
+        com_out = pcl::PointXYZ(x, y, z);
+    }
+
+    return 0;
+}
+
+
+/*
+Loads the XYZ point cloud, XYZ point cloud with normals, and mesh from the given .obj file.
+returns -1 if something went wrong, 0 otherwise.
+*/
+int loadOBJData(std::string threed_file_path, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr_out, pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr_out, pcl::PolygonMesh::Ptr mesh_ptr_out) {
+    // Load cloud
+    if (pcl::io::loadOBJFile(threed_file_path, *cloud_ptr_out) == 0) {
+    std::cerr << ".obj file found" << std::endl;
+    } else {
+        std::cerr << "Could not load point cloud data from given .obj file" << std::endl;
+        return -1;
+    }
+    // Load cloud and normals
+    if (pcl::io::loadOBJFile(threed_file_path, *cloud_w_normals_ptr_out) == 0) {
+        std::cerr << ".obj file found" << std::endl;
+    } else {
+        std::cerr << "Could not load point cloud and normal data from given .obj file" << std::endl;
+        return -1;
+    }
+    // Load mesh
+    if (pcl::io::loadOBJFile(threed_file_path, *mesh_ptr_out) == 0) {
+        std::cerr << ".obj file found" << std::endl;
+    } else {
+        std::cerr << "Could not load mesh data from given .obj file" << std::endl;
+        return -1;
+    }
+
+    return 0;
+}
+
+
+/*
+Loads the XYZ point cloud, XYZ point cloud with normals, and mesh from the given .ply file.
+returns -1 if something went wrong, 0 otherwise.
+*/
+int loadPLYData(std::string threed_file_path, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr_out, pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr_out, pcl::PolygonMesh::Ptr mesh_ptr_out) {
+    // Load cloud
+    if (pcl::io::loadPLYFile(threed_file_path, *cloud_ptr_out) == 0) {
+    std::cerr << ".ply file found" << std::endl;
+    } else {
+        std::cerr << "Could not load point cloud data from given .ply file" << std::endl;
+        return -1;
+    }
+    // Load cloud and normals
+    if (pcl::io::loadPLYFile(threed_file_path, *cloud_w_normals_ptr_out) == 0) {
+        std::cerr << ".ply file found" << std::endl;
+    } else {
+        std::cerr << "Could not load point cloud and normal data from given .ply file" << std::endl;
+        return -1;
+    }
+    // Load mesh
+    if (pcl::io::loadPLYFile(threed_file_path, *mesh_ptr_out) == 0) {
+        std::cerr << ".ply file found" << std::endl;
+    } else {
+        std::cerr << "Could not load mesh data from given .ply file" << std::endl;
+        return -1;
+    }
+
+    return 0;
+}
+
+
+/*
+Loads the XYZ point cloud and XYZ point cloud with normals.pcd file.
+returns -1 if something went wrong, 0 otherwise.
+*/
+int loadPCDData(std::string threed_file_path, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr_out, pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr_out) {
+    // Load cloud
+    if (pcl::io::loadPCDFile(threed_file_path, *cloud_ptr_out) == 0) {
+    std::cerr << ".pcd file found" << std::endl;
+    } else {
+        std::cerr << "Could not load point cloud data from given .pcd file" << std::endl;
+        return -1;
+    }
+    // Load cloud and normals
+    if (pcl::io::loadPCDFile(threed_file_path, *cloud_w_normals_ptr_out) == 0) {
+        std::cerr << ".pcd file found" << std::endl;
+    } else {
+        std::cerr << "Could not load point cloud and normal data from given .pcd file" << std::endl;
+        return -1;
+    }
+
+    return 0;
 }
