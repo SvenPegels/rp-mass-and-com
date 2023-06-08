@@ -11,3 +11,7 @@
 # rp-mass-and-com-standalone #
 ##############################
 /rp-mass-and-com-standalone/build
+
+# output 3D data #
+/rp-mass-and-com-depth-camera-victoria/My-project/PCD/ # Depth camera partial view output .pcd files
+/pcd_files/partial_view_generated_clouds/
