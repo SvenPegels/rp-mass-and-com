@@ -44,3 +44,25 @@ void displayText(pcl::visualization::PCLVisualizer::Ptr viewer, const std::strin
     viewer->addText(text, 0, line_default_offset + line_counter * line_height);
     line_counter++;
 }
+
+
+/*
+Returns a string representation of the given pcl::PointXYZ
+*/
+std::string toString(pcl::PointXYZ &point, int precision) {
+    std::stringstream stream;
+
+    stream << std::fixed << std::setprecision(precision) << point.x;
+    std::string x = stream.str();
+    stream.str(std::string());
+
+    stream << std::fixed << std::setprecision(precision) << point.y;
+    std::string y = stream.str();
+    stream.str(std::string());
+
+    stream << std::fixed << std::setprecision(precision) << point.z;
+    std::string z = stream.str();
+    stream.str(std::string());
+
+    return "(" + x + ", " + y + ", " + z + ")";
+}

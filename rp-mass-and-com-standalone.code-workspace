@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "pcl_test"
+		},
+		{
+			"path": "rp-mass-and-com-depth-camera-victoria"
 		}
 	],
 	"settings": {
@@ -73,7 +76,8 @@
 			"cinttypes": "cpp",
 			"typeindex": "cpp",
 			"typeinfo": "cpp",
-			"variant": "cpp"
+			"variant": "cpp",
+			"codecvt": "cpp"
 		}
 	}
 }

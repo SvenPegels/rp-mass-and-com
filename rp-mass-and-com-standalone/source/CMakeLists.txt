@@ -19,3 +19,8 @@ target_link_libraries(volume_estimation_obj ${PCL_LIBRARIES})
 
 add_executable (visualize_partial_view ${SOURCES_FILES_LIBS} visualize_partial_view.cpp)
 target_link_libraries(visualize_partial_view ${PCL_LIBRARIES})
+
+add_executable (center_of_mass_estimation_obj ${SOURCES_FILES_LIBS} center_of_mass_estimation_obj.cpp)
+target_link_libraries(center_of_mass_estimation_obj ${PCL_LIBRARIES})
+add_executable (center_of_mass_estimation_pcd ${SOURCES_FILES_LIBS} center_of_mass_estimation_pcd.cpp)
+target_link_libraries(center_of_mass_estimation_pcd ${PCL_LIBRARIES})

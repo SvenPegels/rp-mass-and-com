@@ -25,3 +25,14 @@ void getBoundingBoxes(
     feature_extractor.getAABB(AABB_min_point_out, AABB_max_point_out);
     feature_extractor.getOBB(OBB_min_point, OBB_max_point_out, OBB_pos, OBB_rot_out);
 }
+
+
+/*
+Rotates the given 'point_in' by 'rotation', then translates it by 'position', returning the result in 'point_out'*/
+void getOBBPoint(pcl::PointXYZ &point_in, Eigen::Matrix3f rotation, pcl::PointXYZ &position, pcl::PointXYZ &point_out) {
+    Eigen::Vector3f point_vectro = Eigen::Vector3f(point_in.x, point_in.y, point_in.z);
+    Eigen::Vector3f point_rotated = rotation * point_vectro;
+    Eigen::Vector3f position_vector = Eigen::Vector3f(position.x, position.y, position.z);
+    Eigen::Vector3f point_translated = position_vector + point_rotated;
+    point_out = pcl::PointXYZ(point_translated.x(), point_translated.y(), point_translated.z());
+}

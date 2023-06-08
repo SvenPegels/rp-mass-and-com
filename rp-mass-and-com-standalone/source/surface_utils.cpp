@@ -133,6 +133,34 @@ void flipNormal(Eigen::Vector3f &normal) {
 
 
 /*
+Corrects normals away from the given reference point.
+*/
+void correctNormalsAway(pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr, pcl::PointXYZ &reference_point, pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_corrected_ptr_out) {
+    bool debug_print = false;
+    int n_flipped = 0;
+    std::cerr << "correctNormalsAway - Total size: '" << cloud_w_normals_ptr->size() << "'" << std::endl;
+
+    Eigen::Vector3f p_ref = reference_point.getArray3fMap();
+    for (int i = 0; i < cloud_w_normals_ptr->size(); i++) {
+        Eigen::Vector3f normal = cloud_w_normals_ptr->at(i).getNormalVector3fMap();
+        Eigen::Vector3f point = cloud_w_normals_ptr->at(i).getArray3fMap();
+        Eigen::Vector3f vec_ref_point = p_ref - point;
+        // Flip surface normal if the dot product between normal and the vector from the reference point to the normal's point/origin is '< 0'
+        float sign = vec_ref_point.dot(normal);
+        if (/*normal is towards wrong direction*/ sign < 0.0f) {
+            n_flipped++;
+            if (debug_print) std::cerr << "FLIPPED" << std::endl;
+            normal = Eigen::Vector3f(-1*normal.x(),-1*normal.y(),-1*normal.z());
+        }
+
+        cloud_w_normals_corrected_ptr_out->push_back(pcl::PointNormal(point.x(), point.y(), point.z(), normal.x(), normal.y(), normal.z()));
+    }
+
+    std::cerr << "correctNormalsAway - Normals flipped: '" << n_flipped << "'" << std::endl;
+}
+
+
+/*
 Calculates a convex hull around the given 3D PointCloud.
 Outputs the vertices of the hull.
 */
@@ -145,7 +173,8 @@ void calcConvexHull3D(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, pcl::PointC
 
 /*
 Calculates a convex hull around the given 3D PointCloud.
-Outputs the mesh of the hull/
+Uses the Quickhull algorithm (as per qhull.org).
+Outputs the mesh of the hull.
 */
 double calcConvexHull3D(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr, pcl::PolygonMesh::Ptr convex_hull_mesh_ptr_out) {
     pcl::ConvexHull<pcl::PointXYZ> chull;
