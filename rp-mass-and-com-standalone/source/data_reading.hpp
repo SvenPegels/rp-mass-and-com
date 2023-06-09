@@ -32,6 +32,12 @@ int dataFilePathFromObjectFilePath(std::string object_file_path, std::string &da
 
 
 /*
+Replaces the .pcd, .ply, or .obj file extension with the given string
+*/
+int replaceObjectFileExtensionWith(std::string &object_file_path, std::string &replacement, std::string &string_out);
+
+
+/*
 Reads the actual volume from a _data.txt file, given the .pcd/.ply/.obj file path.
 Returns the volume, or -1 if something went wrong.
 Assumes that the file is formatted as such (has to be on the first line):

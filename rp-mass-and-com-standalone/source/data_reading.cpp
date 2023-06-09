@@ -35,6 +35,18 @@ Retrieves the _data.txt file corresponding to the given .pcd/.plu/.obj object fi
 Returns -1 if an non-supported object file is given, otherwise 0.
 */
 int dataFilePathFromObjectFilePath(std::string object_file_path, std::string &data_file_path_out) {
+    std::string replacement = "_data.txt";
+    int res = replaceObjectFileExtensionWith(object_file_path, replacement, data_file_path_out);
+    std::cerr << "data_file_path '" << data_file_path_out << "'" << std::endl;
+
+    return res;
+}
+
+
+/*
+Replaces the .pcd, .ply, or .obj file extension with the given string
+*/
+int replaceObjectFileExtensionWith(std::string &object_file_path, std::string &replacement, std::string &string_out) {
     size_t start_pos;
     // If 'object_file_path' is none of the supported 3d files, return -1
     if ((start_pos = object_file_path.find(".pcd")) == std::string::npos
@@ -47,11 +59,10 @@ int dataFilePathFromObjectFilePath(std::string object_file_path, std::string &da
     // Get data file name from 3d object data file name
     // by replacing the .3d_file_extension with '_data.txt'
     
-    data_file_path_out = object_file_path; // I think this copies the whole string and not just references the original one (hopefully)
+    string_out = object_file_path; // I think this copies the whole string and not just references the original one (hopefully)
     float vol_actual = -1;
     std::string type;
-    data_file_path_out.replace(start_pos, 4, "_data.txt");
-    std::cerr << "data_file_path '" << data_file_path_out << "'" << std::endl;
+    string_out.replace(start_pos, 4, replacement);
 
     return 0;
 }

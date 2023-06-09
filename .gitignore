@@ -14,4 +14,6 @@
 
 # output 3D data #
 /rp-mass-and-com-depth-camera-victoria/My-project/PCD/ # Depth camera partial view output .pcd files
+/rp-mass-and-com-depth-camera-victoria/My-project/PCD_TEST/
 /pcd_files/partial_view_generated_clouds/
+/test_results/

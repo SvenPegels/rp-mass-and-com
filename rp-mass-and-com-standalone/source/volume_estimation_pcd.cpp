@@ -22,6 +22,9 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/console/parse.h>
 
+#include <sstream>
+#include <boost/filesystem.hpp>
+
 // Surface estimation
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/surface/gp3.h>
@@ -37,6 +40,7 @@
 #include "bounding_box.cpp"
 #include "volume_estimation.cpp"
 #include "surface_utils.cpp"
+#include "data_writing.cpp"
 
 #define OUTPUT_DIR ((std::string)"output/")
 
@@ -47,7 +51,7 @@ void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr);
 
 
 /*
-./volume_estimation_pcd ~/rp-mass-and-com/pcd_files/rotated_torus.pcd
+./volume_estimation_pcd true /home/svenp/rp-mass-and-com/pcd_files/partial_view_generated_clouds/torus_triangulated_lc_cam_2.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/low_quality/data/torus_triangulated_lc_data.txt /home/svenp/rp-mass-and-com/test_results/volume_partial_view/
 */
 /**
  * Usage: ./volume_estimation_pcd <.pcd file> (<data file>)
@@ -57,14 +61,21 @@ int main (int argc, char** argv) {
     /*
     Check arguments and retrieve data file path
     */
+    if (argc < 3) {
+        std::cerr << "Not enough arguments given!" << std::endl;
+        return -1;
+    }
+
+    std::string arg_write_results = argv[1];
+    std::string threed_file_path = std::string(argv[2]);
     std::string data_file_path;
     if (argc >= 3) {
         // .pcd and data.txt given
-        data_file_path = argv[2];
-    } else if (argc >= 2) {
+        data_file_path = argv[3];
+    } else if (argc >= 3) {
         // .pcd or data.txt not given. Likely only .pcd
         std::cerr << "No .pcd or data file argument given. Assuming .pcd is given. Defaulting to _data.txt for data." << std::endl;
-        if (dataFilePathFromObjectFilePath(argv[1], data_file_path) != 0) {
+        if (dataFilePathFromObjectFilePath(threed_file_path, data_file_path) != 0) {
             data_file_path = "OBJECT_FILE_NOT_SUPPORTED";
             std::cerr << "Object file type not supported!" << std::endl;
             return -1;
@@ -72,6 +83,18 @@ int main (int argc, char** argv) {
     } else {
         std::cerr << "No .pcd file argument given!" << std::endl;
         return -1;
+    }
+
+    // Check whether to write results to file or visualise them
+    bool write_results = false;
+    std::string results_output_folder;
+    if (arg_write_results == "true") {
+        if (argc < 5) {
+            std::cerr << "<write results> was 'true' but not enough arguments given!" << std::endl;
+        return -1;
+        }
+        write_results = true;
+        results_output_folder = argv[4];
     }
 
 
@@ -83,7 +106,7 @@ int main (int argc, char** argv) {
     // pcl::PolygonMesh::Ptr mesh_ptr (new pcl::PolygonMesh);
     // Load cloud data
     // TODO: Extract point cloud from mesh instead
-    if (pcl::io::loadPCDFile(argv[1], *cloud_ptr) == 0) {
+    if (pcl::io::loadPCDFile(threed_file_path, *cloud_ptr) == 0) {
         std::cerr << ".pcd file found" << std::endl;
     } else {
         std::cerr << "Could not load point cloud data from given .pcd file" << std::endl;
@@ -204,10 +227,58 @@ int main (int argc, char** argv) {
     std::cerr << "Convex Hull volume: '" << vol_chull << "'" << std::endl;
     
 
-    // Run until window is closed
-    while (!viewer_ptr->wasStopped()) {
-        viewer_ptr->spinOnce(100);
-        std::this_thread::sleep_for(100ms);
+
+    /*
+    Visualise or write results
+    */
+    if (write_results) {
+        //TODO: Clean this mess up
+        /*
+        Output the results to a .csv file
+        */
+        boost::filesystem::path results_dir_path(results_output_folder);
+        // If 'results_output_folder' ends with a '/', the path will point to '.' instead of the actual folder. Taking the parent path solves that.
+        if (results_dir_path.filename_is_dot()) {
+            results_dir_path = results_dir_path.parent_path();
+        }
+
+        std::cerr << "Output folder: '" << results_dir_path.filename() << "'" << std::endl;
+        std::cerr << "Output folder: '" << results_dir_path.filename().string() << "'" << std::endl;
+        std::cerr << "Output folder path: '" << results_dir_path.string() << "'" << std::endl;
+
+        // Get the input file name from the input file path
+        boost::filesystem::path threed_file_path_temp(threed_file_path);
+        if (threed_file_path_temp.filename_is_dot()) {
+            threed_file_path_temp = threed_file_path_temp.parent_path();
+        }
+        std::string threed_file_name = threed_file_path_temp.filename().string();
+        std::cerr << "treed_file_name: '" << threed_file_name << "'" << std::endl;
+
+        // Get the results file name from the treed file name
+        std::string results_file_name;
+        std::string results_file_ending = "_results.csv";
+        replaceObjectFileExtensionWith(threed_file_name, results_file_ending, results_file_name);
+
+        // Uncomment when writing all results to a single file
+        results_file_name = "results.csv";
+        
+        // Combine the results dir with the results file
+        std::string results_file_path = results_dir_path.append(results_file_name).string();
+        std::cerr << "Output file: '" << results_file_path << "'" << std::endl;
+
+        // Write the results to a .csv file
+        std::stringstream data;
+        // data << "file_name" << "," << "actual_volume" << "," << "aabb_volume" << "," << "obb_volume" << "," << "chull_volume" << "\n";
+        data << threed_file_path << "," << vol_actual << "," << vol_AABB << "," << vol_OBB << "," << vol_chull << "\n";
+        std::string data_string = data.str();
+        // writeStringToFile(results_file_path, data_string);
+        appendStringToFile(results_file_path, data_string);
+    } else {
+        // Run until window is closed
+        while (!viewer_ptr->wasStopped()) {
+            viewer_ptr->spinOnce(100);
+            std::this_thread::sleep_for(100ms);
+        }
     }
 }
 

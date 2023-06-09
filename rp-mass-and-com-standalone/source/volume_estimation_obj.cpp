@@ -20,6 +20,9 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/console/parse.h>
 
+#include <sstream>
+#include <boost/filesystem.hpp>
+
 // Surface normal estimation
 
 #include <pcl/common/transforms.h>
@@ -30,6 +33,7 @@
 #include "bounding_box.cpp"
 #include "volume_estimation.cpp"
 #include "surface_utils.cpp"
+#include "data_writing.cpp"
 
 #define OUTPUT_DIR ((std::string)"output/")
 
@@ -40,24 +44,36 @@ void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr);
 
 
 /*
-./volume_estimation_obj ~/rp-mass-and-com/pcd_files/rotated_torus.obj
+./volume_estimation_obj true /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply/cone_triangulated_hc.ply /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/data/cone_triangulated_hc_data.txt /home/svenp/rp-mass-and-com/test_results/volume_full_mesh/
+
+./volume_estimation_obj false ~/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/ply/torus_triangulated_lc.ply ~/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/torus_triangulated_lc_data.txt
 */
 /**
- * Usage: ./volume_estimation_obj <.obj file> (<data file>)
- * Supports .obj and .ply files
+ * Usage: ./volume_estimation_obj <write results> <.obj file> (<data file>) (<results output folder>)
+ * Supports .obj and .ply files.
+ * If <print results> is set to "true", calculated results will be written to a file in <results output folder> instead, and the will be no visualization.
+ * If <print results> is set to "true", both <data file> and <results output folder> must be given.
+ * If no <data file> is passed, the file path will be assumed from the <.obj file>.
 */
 int main (int argc, char** argv) {
     /*
     Check arguments and retrieve data file path
     */
+    if (argc < 3) {
+        std::cerr << "Not enough arguments given!" << std::endl;
+        return -1;
+    }
+
+    std::string arg_write_results = argv[1];
+    std::string threed_file_path = std::string(argv[2]);
     std::string data_file_path;
-    if (argc >= 3) {
+    if (argc >= 4) {
         // .obj and data.txt given
-        data_file_path = argv[2];
-    } else if (argc >= 2) {
+        data_file_path = argv[3];
+    } else if (argc >= 3) {
         // .obj or data.txt not given. Likely only .obj
         std::cerr << "No .obj or data file argument given. Assuming .obj is given. Defaulting to _data.txt for data." << std::endl;
-        if (dataFilePathFromObjectFilePath(argv[1], data_file_path) != 0) {
+        if (dataFilePathFromObjectFilePath(threed_file_path, data_file_path) != 0) {
             data_file_path = "OBJECT_FILE_NOT_SUPPORTED";
             std::cerr << "Object file type not supported!" << std::endl;
             return -1;
@@ -67,6 +83,18 @@ int main (int argc, char** argv) {
         return -1;
     }
 
+    // Check whether to write results to file or visualise them
+    bool write_results = false;
+    std::string results_output_folder;
+    if (arg_write_results == "true") {
+        if (argc < 5) {
+            std::cerr << "<write results> was 'true' but not enough arguments given!" << std::endl;
+        return -1;
+        }
+        write_results = true;
+        results_output_folder = argv[4];
+    }
+
 
     /*
     Load 3d data
@@ -74,8 +102,6 @@ int main (int argc, char** argv) {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZ> ()); // TODO: Temp
     pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr (new pcl::PointCloud<pcl::PointNormal> ());
     pcl::PolygonMesh::Ptr mesh_ptr (new pcl::PolygonMesh);
-
-    std::string threed_file_path = std::string(argv[1]);
 
     // Load data from .obj, if given file is a .obj file
     if (threed_file_path.find(".obj") != std::string::npos) {
@@ -149,7 +175,7 @@ int main (int argc, char** argv) {
     // Estimate centroid normals
     // Centroid normal is estimated using the cross product of the vectors from p1 to p2, and p1 to p3.
     pcl::PointCloud<pcl::Normal>::Ptr centroid_normals_ptr (new pcl::PointCloud<pcl::Normal>());
-    estimateSurfaceNormals(mesh_ptr, cloud_w_normals_ptr, centroid_normals_ptr);
+    estimateSurfaceNormals(mesh_ptr, cloud_w_normals_ptr, centroid_normals_ptr, true);
     
     // Combine centroid xyz and normal
     pcl::PointCloud<pcl::PointNormal>::Ptr surface_centroids_w_normals_ptr (new pcl::PointCloud<pcl::PointNormal>);
@@ -206,10 +232,58 @@ int main (int argc, char** argv) {
     displayText(viewer_ptr, "Convex Hull volume: " + std::to_string(vol_chull));
     
 
-    // Run until window is closed
-    while (!viewer_ptr->wasStopped()) {
-        viewer_ptr->spinOnce(100);
-        std::this_thread::sleep_for(100ms);
+
+    /*
+    Visualise or write results
+    */
+    if (write_results) {
+        //TODO: Clean this mess up
+        /*
+        Output the results to a .csv file
+        */
+        boost::filesystem::path results_dir_path(results_output_folder);
+        // If 'results_output_folder' ends with a '/', the path will point to '.' instead of the actual folder. Taking the parent path solves that.
+        if (results_dir_path.filename_is_dot()) {
+            results_dir_path = results_dir_path.parent_path();
+        }
+
+        std::cerr << "Output folder: '" << results_dir_path.filename() << "'" << std::endl;
+        std::cerr << "Output folder: '" << results_dir_path.filename().string() << "'" << std::endl;
+        std::cerr << "Output folder path: '" << results_dir_path.string() << "'" << std::endl;
+
+        // Get the input file name from the input file path
+        boost::filesystem::path threed_file_path_temp(threed_file_path);
+        if (threed_file_path_temp.filename_is_dot()) {
+            threed_file_path_temp = threed_file_path_temp.parent_path();
+        }
+        std::string threed_file_name = threed_file_path_temp.filename().string();
+        std::cerr << "treed_file_name: '" << threed_file_name << "'" << std::endl;
+
+        // Get the results file name from the treed file name
+        std::string results_file_name;
+        std::string results_file_ending = "_results.csv";
+        replaceObjectFileExtensionWith(threed_file_name, results_file_ending, results_file_name);
+
+        // Uncomment when writing all results to a single file
+        results_file_name = "results.csv";
+        
+        // Combine the results dir with the results file
+        std::string results_file_path = results_dir_path.append(results_file_name).string();
+        std::cerr << "Output file: '" << results_file_path << "'" << std::endl;
+
+        // Write the results to a .csv file
+        std::stringstream data;
+        // data << "file_name" << "," << "actual_volume" << "," << "aabb_volume" << "," << "obb_volume" << "," << "tetra_volume" << "," << "chull_volume" << "\n";
+        data << threed_file_path << "," << vol_actual << "," << vol_AABB << "," << vol_OBB << "," << vol_tetra << "," << vol_chull << "\n";
+        std::string data_string = data.str();
+        // writeStringToFile(results_file_path, data_string);
+        appendStringToFile(results_file_path, data_string);
+    } else {
+        // Run until window is closed
+        while (!viewer_ptr->wasStopped()) {
+            viewer_ptr->spinOnce(100);
+            std::this_thread::sleep_for(100ms);
+        }
     }
 }
 

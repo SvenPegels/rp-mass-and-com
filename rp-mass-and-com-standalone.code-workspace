@@ -11,6 +11,9 @@
 		},
 		{
 			"path": "rp-mass-and-com-depth-camera-victoria"
+		},
+		{
+			"path": "testing"
 		}
 	],
 	"settings": {
@@ -77,7 +80,8 @@
 			"typeindex": "cpp",
 			"typeinfo": "cpp",
 			"variant": "cpp",
-			"codecvt": "cpp"
+			"codecvt": "cpp",
+			"filesystem": "cpp"
 		}
 	}
 }
