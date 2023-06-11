@@ -6,14 +6,14 @@ UNITY_OUTPUT_DIR = "/home/svenp/rp-mass-and-com/rp-mass-and-com-depth-camera-vic
 
 COPY_FILE_MODIFIER = "*.pcd"
 
-ESTIMATION_EXECUTABLE = "/home/svenp/rp-mass-and-com/rp-mass-and-com-standalone/build/./volume_estimation_pcd"
+ESTIMATION_EXECUTABLE = "/home/svenp/rp-mass-and-com/rp-mass-and-com-standalone/build/./center_of_mass_estimation_pcd"
 ESTIMATION_INPUT_DIR = "/home/svenp/rp-mass-and-com/pcd_files/partial_view_generated_clouds"
 ESTIMATION_DATA_INPUT_DIR = "/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data"
-# INPUT_DIR = "/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply"
-# DATA_INPUT_DIR = "/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/data"
+# ESTIMATION_INPUT_DIR = "/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply"
+# ESTIMATION_DATA_INPUT_DIR = "/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/data"
 ESTIMATION_INPUT_FILE_SUFFIX = ".pcd"
 ESTIMATION_DATA_FILE_SUFFIX = "_data.txt"
-ESTIMATION_RESULTS_OUTPUT_DIR = "/home/svenp/rp-mass-and-com/test_results/volume_partial_view"
+ESTIMATION_RESULTS_OUTPUT_DIR = "/home/svenp/rp-mass-and-com/test_results/com_partial_view"
 
 
 """
@@ -29,7 +29,7 @@ File Copying
 """
 print("Testing - Copying generated .pcd files from '" + UNITY_OUTPUT_DIR + "' to '" + ESTIMATION_INPUT_DIR + "'...")
 os.system("cp " + UNITY_OUTPUT_DIR + "/" + COPY_FILE_MODIFIER + " " + ESTIMATION_INPUT_DIR)
-"cp ~/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/PCD/*.pcd ~/rp-mass-and-com/pcd_files/partial_view_generated_clouds"
+# "cp ~/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/PCD/*.pcd ~/rp-mass-and-com/pcd_files/partial_view_generated_clouds"
 print("Testing - Done!")
 
 

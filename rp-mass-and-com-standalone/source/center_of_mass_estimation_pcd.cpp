@@ -13,6 +13,9 @@
 #include <Eigen/Geometry>
 #include <pcl/common/centroid.h>
 
+#include <sstream>
+#include <boost/filesystem.hpp>
+
 /*Own code*/
 #include "data_reading.cpp"
 #include "bounding_box.cpp"
@@ -20,6 +23,7 @@
 #include "surface_utils.cpp"
 #include "center_of_mass.cpp"
 #include "conversion.cpp"
+#include "data_writing.cpp"
 
 
 using namespace std::chrono_literals;
@@ -28,7 +32,9 @@ using namespace std::chrono_literals;
 void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr);
 
 /*
-./center_of_mass_estimation_pcd ~/rp-mass-and-com/pcd_files/partial_view_generated_clouds/cylinder_triangulated_lc_cam_1.pcd ~/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/cylinder_triangulated_lc_data.txt
+./center_of_mass_estimation_pcd true /home/svenp/rp-mass-and-com/pcd_files/partial_view_generated_clouds/cylinder_triangulated_lc_cam_0.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/cylinder_triangulated_lc_data.txt /home/svenp/rp-mass-and-com/test_results/test_test/
+
+./center_of_mass_estimation_pcd false /home/svenp/rp-mass-and-com/pcd_files/partial_view_generated_clouds/cylinder_triangulated_lc_cam_0.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/cylinder_triangulated_lc_data.txt
 */
 /**
  * Center of Mass estimation from partial view .pcd files.
@@ -37,14 +43,21 @@ int main(int argc, char** argv) {
     /*
     Check arguments and retrieve data file path
     */
+    if (argc < 3) {
+        std::cerr << "Not enough arguments given!" << std::endl;
+        return -1;
+    }
+
+    std::string arg_write_results = argv[1];
+    std::string threed_file_path = std::string(argv[2]); // Yes, threed is 3D but that is not allowed.
     std::string data_file_path;
     if (argc >= 3) {
         // .pcd and data.txt given
-        data_file_path = argv[2];
-    } else if (argc >= 2) {
+        data_file_path = argv[3];
+    } else if (argc >= 3) {
         // .pcd or data.txt not given. Likely only .pcd
-        std::cerr << "No .pcd or data file argument given. Assuming .obj is given. Defaulting to _data.txt for data." << std::endl;
-        if (dataFilePathFromObjectFilePath(argv[1], data_file_path) != 0) {
+        std::cerr << "No .pcd or data file argument given. Assuming .pcd is given. Defaulting to _data.txt for data." << std::endl;
+        if (dataFilePathFromObjectFilePath(threed_file_path, data_file_path) != 0) {
             data_file_path = "OBJECT_FILE_NOT_SUPPORTED";
             std::cerr << "Object file type not supported!" << std::endl;
             return -1;
@@ -54,14 +67,24 @@ int main(int argc, char** argv) {
         return -1;
     }
 
+    // Check whether to write results to file or visualise them
+    bool write_results = false;
+    std::string results_output_folder;
+    if (arg_write_results == "true") {
+        if (argc < 5) {
+            std::cerr << "<write results> was 'true' but not enough arguments given!" << std::endl;
+        return -1;
+        }
+        write_results = true;
+        results_output_folder = argv[4];
+    }
+
 
     /*
     Load 3d data
     */
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ptr (new pcl::PointCloud<pcl::PointXYZ> ()); // TODO: Temp
     pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals_ptr (new pcl::PointCloud<pcl::PointNormal> ());
-
-    std::string threed_file_path = std::string(argv[1]);
 
     // Load data from .pcd, if given file is a .pcd file
     if (threed_file_path.find(".pcd") != std::string::npos) {
@@ -139,13 +162,13 @@ int main(int argc, char** argv) {
     // viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, 1.0, "convex hull mesh");
 
     //TODO: TEMP: Check convex hull face sizes
-    std::vector<pcl::Vertices> vertices = convex_hull_mesh_ptr->polygons;
-    std::vector<pcl::Vertices> triangulated_vertices = std::vector<pcl::Vertices>();
-    for (pcl::Vertices vs : vertices) {
-        pcl::Indices inds = vs.vertices;
-        std::size_t size = inds.size();
-        std::cerr << "Polygon size: '" << size << "'" << std::endl;
-    }
+    // std::vector<pcl::Vertices> vertices = convex_hull_mesh_ptr->polygons;
+    // std::vector<pcl::Vertices> triangulated_vertices = std::vector<pcl::Vertices>();
+    // for (pcl::Vertices vs : vertices) {
+    //     pcl::Indices inds = vs.vertices;
+    //     std::size_t size = inds.size();
+    //     std::cerr << "Polygon size: '" << size << "'" << std::endl;
+    // }
 
 
     /*
@@ -160,12 +183,13 @@ int main(int argc, char** argv) {
 
 
     //TODO: Temp: print estimated surface normals
-    for (pcl::Normal normal : *centroid_normals_ptr) {
-        std::cerr << "Estimated surface normal: '" << normal << "'" << std::endl;
-    }
+    // for (pcl::Normal normal : *centroid_normals_ptr) {
+    //     std::cerr << "Estimated surface normal: '" << normal << "'" << std::endl;
+    // }
+
     // Calculate surface centers (centroids)
     pcl::PointCloud<pcl::PointXYZ>::Ptr surface_centroids_ptr (new pcl::PointCloud<pcl::PointXYZ>);
-    calcSurfaceCentroids(convex_hull_mesh_ptr, cloud_ptr, surface_centroids_ptr);
+    calcSurfaceCentroids(convex_hull_mesh_ptr, convex_hull_cloud_ptr, surface_centroids_ptr);
     
     // Combine centroid xyz and normal
     pcl::PointCloud<pcl::PointNormal>::Ptr surface_centroids_w_normals_ptr (new pcl::PointCloud<pcl::PointNormal>);
@@ -202,6 +226,9 @@ int main(int argc, char** argv) {
     pcl::PointXYZ com_hull = pcl::PointXYZ();
     res = calcMeshCoMTetrahedron(convex_hull_mesh_ptr, cloud_ptr, centroid_normals_ptr, com_hull, AABB_center_point);
     std::cerr << "Tetra CoM: '" << com_hull << "'" << std::endl;
+    std::cerr << com_hull.x << std::endl;
+    std::cerr << com_hull.y << std::endl;
+    std::cerr << com_hull.z << std::endl;
 
     /*
     CoM estimation using the Convex Hull
@@ -260,10 +287,57 @@ int main(int argc, char** argv) {
 
 
     
-    // Run until window is closed
-    while (!viewer_ptr->wasStopped()) {
-        viewer_ptr->spinOnce(100);
-        std::this_thread::sleep_for(100ms);
+    /*
+    Visualise or write results
+    */
+    if (write_results) {
+        //TODO: Clean this mess up
+        /*
+        Output the results to a .csv file
+        */
+        boost::filesystem::path results_dir_path(results_output_folder);
+        // If 'results_output_folder' ends with a '/', the path will point to '.' instead of the actual folder. Taking the parent path solves that.
+        if (results_dir_path.filename_is_dot()) {
+            results_dir_path = results_dir_path.parent_path();
+        }
+
+        std::cerr << "Output folder: '" << results_dir_path.filename() << "'" << std::endl;
+        std::cerr << "Output folder: '" << results_dir_path.filename().string() << "'" << std::endl;
+        std::cerr << "Output folder path: '" << results_dir_path.string() << "'" << std::endl;
+
+        // Get the input file name from the input file path
+        boost::filesystem::path threed_file_path_temp(threed_file_path);
+        if (threed_file_path_temp.filename_is_dot()) {
+            threed_file_path_temp = threed_file_path_temp.parent_path();
+        }
+        std::string threed_file_name = threed_file_path_temp.filename().string();
+        std::cerr << "treed_file_name: '" << threed_file_name << "'" << std::endl;
+
+        // Get the results file name from the treed file name
+        std::string results_file_name;
+        std::string results_file_ending = "_results.csv";
+        replaceObjectFileExtensionWith(threed_file_name, results_file_ending, results_file_name);
+
+        // Uncomment when writing all results to a single file
+        results_file_name = "results.csv";
+        
+        // Combine the results dir with the results file
+        std::string results_file_path = results_dir_path.append(results_file_name).string();
+        std::cerr << "Output file: '" << results_file_path << "'" << std::endl;
+
+        // Write the results to a .csv file
+        std::stringstream data;
+        // data << "file_name" << "," << "actual_volume" << "," << "aabb_volume" << "," << "obb_volume" << "," << "chull_volume" << "\n";
+        data << threed_file_path << "," << com_actual << "," << AABB_center_point << "," << OBB_center_point << "," << com_hull << "\n";
+        std::string data_string = data.str();
+        // writeStringToFile(results_file_path, data_string);
+        appendStringToFile(results_file_path, data_string);
+    } else {
+        // Run until window is closed
+        while (!viewer_ptr->wasStopped()) {
+            viewer_ptr->spinOnce(100);
+            std::this_thread::sleep_for(100ms);
+        }
     }
 }
 

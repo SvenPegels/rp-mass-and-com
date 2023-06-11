@@ -56,6 +56,15 @@ int calcMeshCoMTetrahedron(pcl::PolygonMesh::Ptr mesh_ptr, pcl::PointCloud<pcl::
         Eigen::Vector3f vec_ref_1 = p1.getVector3fMap() - reference_point.getVector3fMap();
         float dot = surface_normal.dot(vec_ref_1);
         float sign = dot / std::abs(dot); // Turn into just +/-1
+        //TODO: See fixme
+        //FIXME: Fix issue when dot = 0.0 or -0.0
+        if (std::abs(dot) == 0.0f) sign = 0.0;
+
+        if (dot == 0.0f || dot == -0.0f) {
+            std::cerr << "----------Dot product = 0." << std::endl;
+            std::cerr << "sign: '" << sign << "'" << std::endl;
+            std::cerr << "vol: '" << vol_tetra << "'" << std::endl;
+        }
 
         float vol_tetra_signed = vol_tetra * sign;
         vol_want += vol_tetra_signed;
@@ -67,6 +76,8 @@ int calcMeshCoMTetrahedron(pcl::PolygonMesh::Ptr mesh_ptr, pcl::PointCloud<pcl::
     }
 
     com_out = pcl::PointXYZ(x/vol_want, y/vol_want, z/vol_want);
+
+    std::cerr << "Calculated = x:" << x << " y:" << y << " z:" << z << " vol_want:" << vol_want << std::endl;
 
     ;return 0;
 }

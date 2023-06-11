@@ -67,7 +67,7 @@ int main (int argc, char** argv) {
     }
 
     std::string arg_write_results = argv[1];
-    std::string threed_file_path = std::string(argv[2]);
+    std::string threed_file_path = std::string(argv[2]); // Yes, threed is 3D but that is not allowed.
     std::string data_file_path;
     if (argc >= 3) {
         // .pcd and data.txt given
