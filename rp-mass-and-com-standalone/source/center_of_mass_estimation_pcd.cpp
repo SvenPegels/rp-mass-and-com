@@ -328,7 +328,12 @@ int main(int argc, char** argv) {
         // Write the results to a .csv file
         std::stringstream data;
         // data << "file_name" << "," << "actual_volume" << "," << "aabb_volume" << "," << "obb_volume" << "," << "chull_volume" << "\n";
-        data << threed_file_path << "," << com_actual << "," << AABB_center_point << "," << OBB_center_point << "," << com_hull << "\n";
+        data << threed_file_path 
+        << "," << com_actual.x << "," << com_actual.y << "," << com_actual.z 
+        << "," << AABB_center_point.x << "," << AABB_center_point.y << "," << AABB_center_point.z 
+        << "," << OBB_center_point.x << "," << OBB_center_point.y << "," << OBB_center_point.z 
+        << "," << com_hull.x << "," << com_hull.y << "," << com_hull.z
+        << "\n";
         std::string data_string = data.str();
         // writeStringToFile(results_file_path, data_string);
         appendStringToFile(results_file_path, data_string);
