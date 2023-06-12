@@ -19,6 +19,7 @@ f_results.write(res_template)
 f_results.close()
 
 
+# Run estimation for every file in INPUT_DIR
 for file_name in os.listdir(INPUT_DIR):
     file_path = os.path.join(INPUT_DIR, file_name)
     # checking if it is a file ending with INPUT_FILE_SUFFIX

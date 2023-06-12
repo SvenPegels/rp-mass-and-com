@@ -1,19 +1,19 @@
 import os
 import re
 
-UNITY_EXECUTABLE = "~/Unity/Hub/Editor/2021.3.23f1/Editor/Unity -projectPath ~/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/ -executeMethod PartialViewPCDGenerator.GeneratePartialViews"
-UNITY_OUTPUT_DIR = "/home/svenp/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/PCD"
+UNITY_EXECUTABLE = "~/Unity/Hub/Editor/2021.3.23f1/Editor/Unity -projectPath ~/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/ -executeMethod PartialViewPCDGenerator.GenerateResolutions"
+UNITY_OUTPUT_DIR = "/home/svenp/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/PCD_TEST_RES"
 
 COPY_FILE_MODIFIER = "*.pcd"
 
 ESTIMATION_EXECUTABLE = "/home/svenp/rp-mass-and-com/rp-mass-and-com-standalone/build/./center_of_mass_estimation_pcd"
-ESTIMATION_INPUT_DIR = "/home/svenp/rp-mass-and-com/pcd_files/partial_view_generated_clouds"
+ESTIMATION_INPUT_DIR = "/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds"
 ESTIMATION_DATA_INPUT_DIR = "/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data"
 # ESTIMATION_INPUT_DIR = "/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply"
 # ESTIMATION_DATA_INPUT_DIR = "/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/data"
 ESTIMATION_INPUT_FILE_SUFFIX = ".pcd"
 ESTIMATION_DATA_FILE_SUFFIX = "_data.txt"
-ESTIMATION_RESULTS_OUTPUT_DIR = "/home/svenp/rp-mass-and-com/test_results/com_partial_view"
+ESTIMATION_RESULTS_OUTPUT_DIR = "/home/svenp/rp-mass-and-com/test_results/com_resolutions"
 
 
 """
@@ -53,7 +53,7 @@ for file_name in os.listdir(ESTIMATION_INPUT_DIR):
     if os.path.isfile(file_path) and file_path.endswith(ESTIMATION_INPUT_FILE_SUFFIX):
 
         data_file_name = file_name[:-len(ESTIMATION_INPUT_FILE_SUFFIX)] + ESTIMATION_DATA_FILE_SUFFIX # Trim the INPUT_FILE_SUFFIX
-        data_file_name = re.sub('_cam_[0-9]+', '', data_file_name) # Trim the 'partial view cam suffix'. Works up to cam_99.
+        data_file_name = re.sub('_res_[0-9]+', '', data_file_name) # Trim the 'partial view cam suffix'. Works up to cam_99.
 
         
         data_file_path = os.path.join(ESTIMATION_DATA_INPUT_DIR, data_file_name)

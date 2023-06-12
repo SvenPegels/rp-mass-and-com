@@ -51,7 +51,11 @@ void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr);
 
 
 /*
-./volume_estimation_pcd true /home/svenp/rp-mass-and-com/pcd_files/partial_view_generated_clouds/torus_triangulated_lc_cam_2.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/low_quality/data/torus_triangulated_lc_data.txt /home/svenp/rp-mass-and-com/test_results/volume_partial_view/
+./volume_estimation_pcd true /home/svenp/rp-mass-and-com/pcd_files/partial_view_generated_clouds/torus_triangulated_lc_cam_2.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/torus_triangulated_lc_data.txt /home/svenp/rp-mass-and-com/test_results/volume_partial_view/
+
+./volume_estimation_pcd false /home/svenp/rp-mass-and-com/pcd_files/partial_view_generated_clouds/cylinder_triangulated_lc_cam_0.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/cone_triangulated_lc_data.txt
+
+./volume_estimation_pcd false /home/svenp/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/PCD_TEST_RES/cone_triangulated_lc_res_0.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/cone_triangulated_lc_data.txt
 */
 /**
  * Usage: ./volume_estimation_pcd <.pcd file> (<data file>)

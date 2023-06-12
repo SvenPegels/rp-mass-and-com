@@ -1,19 +1,19 @@
 import os
 import re
 
-UNITY_EXECUTABLE = "~/Unity/Hub/Editor/2021.3.23f1/Editor/Unity -projectPath ~/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/ -executeMethod PartialViewPCDGenerator.GeneratePartialViews"
-UNITY_OUTPUT_DIR = "/home/svenp/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/PCD"
+UNITY_EXECUTABLE = "~/Unity/Hub/Editor/2021.3.23f1/Editor/Unity -projectPath ~/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/ -executeMethod PartialViewPCDGenerator.GenerateResolutions"
+UNITY_OUTPUT_DIR = "/home/svenp/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/PCD_TEST_RES"
 
 COPY_FILE_MODIFIER = "*.pcd"
 
-ESTIMATION_EXECUTABLE = "/home/svenp/rp-mass-and-com/rp-mass-and-com-standalone/build/./center_of_mass_estimation_pcd"
-ESTIMATION_INPUT_DIR = "/home/svenp/rp-mass-and-com/pcd_files/partial_view_generated_clouds"
+ESTIMATION_EXECUTABLE = "/home/svenp/rp-mass-and-com/rp-mass-and-com-standalone/build/./volume_estimation_pcd"
+ESTIMATION_INPUT_DIR = "/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds"
 ESTIMATION_DATA_INPUT_DIR = "/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data"
-# ESTIMATION_INPUT_DIR = "/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply"
-# ESTIMATION_DATA_INPUT_DIR = "/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/data"
+# INPUT_DIR = "/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply" NOTE THIS LINE IS WRONG
+# DATA_INPUT_DIR = "/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/data"
 ESTIMATION_INPUT_FILE_SUFFIX = ".pcd"
 ESTIMATION_DATA_FILE_SUFFIX = "_data.txt"
-ESTIMATION_RESULTS_OUTPUT_DIR = "/home/svenp/rp-mass-and-com/test_results/com_partial_view"
+ESTIMATION_RESULTS_OUTPUT_DIR = "/home/svenp/rp-mass-and-com/test_results/volume_resolutions"
 
 
 """
@@ -29,7 +29,6 @@ File Copying
 """
 print("Testing - Copying generated .pcd files from '" + UNITY_OUTPUT_DIR + "' to '" + ESTIMATION_INPUT_DIR + "'...")
 os.system("cp " + UNITY_OUTPUT_DIR + "/" + COPY_FILE_MODIFIER + " " + ESTIMATION_INPUT_DIR)
-# "cp ~/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/PCD/*.pcd ~/rp-mass-and-com/pcd_files/partial_view_generated_clouds"
 print("Testing - Done!")
 
 
@@ -46,21 +45,18 @@ f_results = open(ESTIMATION_RESULTS_OUTPUT_DIR + "/results.csv", "w")
 f_results.write(res_template)
 f_results.close()
 
-# Run estimation for every file in ESTIMATION_INPUT_DIR
 for file_name in os.listdir(ESTIMATION_INPUT_DIR):
     file_path = os.path.join(ESTIMATION_INPUT_DIR, file_name)
     # checking if it is a file ending with INPUT_FILE_SUFFIX
     if os.path.isfile(file_path) and file_path.endswith(ESTIMATION_INPUT_FILE_SUFFIX):
 
         data_file_name = file_name[:-len(ESTIMATION_INPUT_FILE_SUFFIX)] + ESTIMATION_DATA_FILE_SUFFIX # Trim the INPUT_FILE_SUFFIX
-        data_file_name = re.sub('_cam_[0-9]+', '', data_file_name) # Trim the 'partial view cam suffix'. Works up to cam_99.
-
+        data_file_name = re.sub('_res_[0-9]+', '', data_file_name) # Trim the 'resolution suffix'. Works up to res_99.
         
         data_file_path = os.path.join(ESTIMATION_DATA_INPUT_DIR, data_file_name)
 
         command = ESTIMATION_EXECUTABLE + " true " + file_path + " " + data_file_path + " " + ESTIMATION_RESULTS_OUTPUT_DIR
         os.system(command)
-        # os.system("/home/svenp/rp-mass-and-com/rp-mass-and-com-standalone/build/./volume_estimation_obj true /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply/cone_triangulated_hc.ply /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/data/cone_triangulated_hc_data.txt /home/svenp/rp-mass-and-com/test_results/")
 
         # break
 print("Testing - Done!")

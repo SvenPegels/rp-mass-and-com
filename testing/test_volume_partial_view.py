@@ -1,7 +1,7 @@
 import os
 import re
 
-UNITY_EXECUTABLE = "~/Unity/Hub/Editor/2021.3.23f1/Editor/Unity -projectPath ~/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/ -executeMethod PartialViewPCDGenerator.Generate"
+UNITY_EXECUTABLE = "~/Unity/Hub/Editor/2021.3.23f1/Editor/Unity -projectPath ~/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/ -executeMethod PartialViewPCDGenerator.GeneratePartialViews"
 UNITY_OUTPUT_DIR = "/home/svenp/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/PCD"
 
 COPY_FILE_MODIFIER = "*.pcd"
