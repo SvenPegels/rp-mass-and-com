@@ -150,6 +150,9 @@ int main (int argc, char** argv) {
     float vol_AABB = calcBoxVolume(AABB_min_point, AABB_max_point);
     float vol_OBB = calcBoxVolume(OBB_min_point, OBB_max_point);
 
+    std::cerr << "AABB " << (AABB_max_point.x - AABB_min_point.x) << " " << (AABB_max_point.y - AABB_min_point.y) << " " << (AABB_max_point.z - AABB_min_point.z) << std::endl;
+    std::cerr << "OBB " << (OBB_max_point.x - OBB_min_point.x) << " " << (OBB_max_point.y - OBB_min_point.y) << " " << (OBB_max_point.z - OBB_min_point.z) << std::endl;
+
     // Calculate AABB center point (average of AABB min and max)
     pcl::PointXYZ AABB_center_point = pcl::PointXYZ((AABB_min_point.x+AABB_max_point.x)/2, (AABB_min_point.y+AABB_max_point.y)/2, (AABB_min_point.z+AABB_max_point.z)/2);
     

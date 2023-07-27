@@ -15,6 +15,7 @@
 
 #include <sstream>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 /*Own code*/
 #include "data_reading.cpp"
@@ -35,6 +36,8 @@ void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr);
 ./center_of_mass_estimation_pcd true /home/svenp/rp-mass-and-com/pcd_files/partial_view_generated_clouds/cylinder_triangulated_lc_cam_0.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/cylinder_triangulated_lc_data.txt /home/svenp/rp-mass-and-com/test_results/test_test/
 
 ./center_of_mass_estimation_pcd false /home/svenp/rp-mass-and-com/pcd_files/partial_view_generated_clouds/cylinder_triangulated_lc_cam_0.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/cylinder_triangulated_lc_data.txt
+
+./center_of_mass_estimation_pcd false /home/svenp/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/PCD_TEST_PV/cylinder_triangulated_lc_cam_0.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/cylinder_triangulated_lc_data.txt
 */
 /**
  * Center of Mass estimation from partial view .pcd files.
@@ -205,17 +208,17 @@ int main(int argc, char** argv) {
     Some normals seem to be pointing towards the outside while others are pointing towards the inside.
     Maybe try correcting them by pointing them away from the center?
     */
-    pcl::PointXYZ convex_hull_average = pcl::PointXYZ();
+    pcl::PointXYZ average_chull = pcl::PointXYZ();
     pcl::CentroidPoint<pcl::PointXYZ> chull_average_calc;
     for (pcl::PointXYZ p : *convex_hull_cloud_ptr) {
         chull_average_calc.add(p);
     }
-    chull_average_calc.get(convex_hull_average);
-    viewer_ptr->addSphere(convex_hull_average, 0.4, 0.5, 0.5, 0.5, "convex hull average");
+    chull_average_calc.get(average_chull);
+    viewer_ptr->addSphere(average_chull, 0.4, 0.5, 0.5, 0.5, "convex hull average");
     
 
     pcl::PointCloud<pcl::PointNormal>::Ptr surface_centroids_w_normals_corrected_ptr (new pcl::PointCloud<pcl::PointNormal>());
-    correctNormalsAway(surface_centroids_w_normals_ptr, convex_hull_average, surface_centroids_w_normals_corrected_ptr);
+    correctNormalsAway(surface_centroids_w_normals_ptr, average_chull, surface_centroids_w_normals_corrected_ptr);
 
     viewer_ptr->addPointCloudNormals<pcl::PointNormal>(surface_centroids_w_normals_ptr, 1, 1.0, "hull centroid normals");
     viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 1.0, 0.0, 0.0, "hull centroid normals");
@@ -223,47 +226,84 @@ int main(int argc, char** argv) {
 
 
 
-    pcl::PointXYZ com_hull = pcl::PointXYZ();
-    res = calcMeshCoMTetrahedron(convex_hull_mesh_ptr, cloud_ptr, centroid_normals_ptr, com_hull, AABB_center_point);
-    std::cerr << "Tetra CoM: '" << com_hull << "'" << std::endl;
-    std::cerr << com_hull.x << std::endl;
-    std::cerr << com_hull.y << std::endl;
-    std::cerr << com_hull.z << std::endl;
+    pcl::PointXYZ com_chull = pcl::PointXYZ();
+    res = calcMeshCoMTetrahedron(convex_hull_mesh_ptr, cloud_ptr, centroid_normals_ptr, com_chull, AABB_center_point);
+    std::cerr << "Tetra CoM: '" << com_chull << "'" << std::endl;
+    std::cerr << com_chull.x << std::endl;
+    std::cerr << com_chull.y << std::endl;
+    std::cerr << com_chull.z << std::endl;
 
     /*
     CoM estimation using the Convex Hull
     */
     // TODO: make dynamic. For now: assumes camera position 1 (-30f, 30f, -30f)
-    Eigen::Vector3f cam_pos = Eigen::Vector3f(-30.0, 30.0, -30.0);
+    Eigen::Vector3f cam_pos;
+    if (boost::algorithm::ends_with(threed_file_path, "cam_0.pcd")) {
+        cam_pos = Eigen::Vector3f(0,0,-50);
+    } else if (boost::algorithm::ends_with(threed_file_path, "cam_1.pcd")) {
+        cam_pos = Eigen::Vector3f(-15,15,-45);
+    } else if (boost::algorithm::ends_with(threed_file_path, "cam_2.pcd")) {
+        cam_pos = Eigen::Vector3f(-30,30,-30);
+    }
     // Rotation of (0,0,0) means looking in the positive z direction
     // NOTE: Quaternion here is (w,x,y,z). In unity it is (x,y,z,w)!!!
-    Eigen::Quaternionf cam_rot_quat = Eigen::Quaternionf(0.88112f, 0.27782f, 0.36497f, -0.11508f);
-    cam_rot_quat.normalize();
+    // Eigen::Quaternionf cam_rot_quat = Eigen::Quaternionf(0.88112f, 0.27782f, 0.36497f, -0.11508f);
+    // cam_rot_quat.normalize();
 
     // Get the direction at which the camera is looking at, represented by a point relative to (0,0,0) at distance 'z'
-    Eigen::Vector3f cam_default_dir_rel_pos(0.0, 0.0, 5.0); // looking to positive z-direction by default (0 rotation)
-    Eigen::Vector3f cam_dir_rel_pos = cam_rot_quat * cam_default_dir_rel_pos;
+    // Eigen::Vector3f cam_default_dir_rel_pos(0.0, 0.0, 5.0); // looking to positive z-direction by default (0 rotation)
+    // Eigen::Vector3f cam_dir_rel_pos = cam_rot_quat * cam_default_dir_rel_pos;
+    Eigen::Vector3f cam_dir_rel = Eigen::Vector3f(0,0,0) - cam_pos;
 
 
     // Visualize camera by a larger red sphere as the position, aiming at a smaller green sphere with a white line as the camera rotation/direction
     pcl::PointXYZ cam_p1(cam_pos.x(), cam_pos.y(), cam_pos.z());
-    pcl::PointXYZ cam_p2((cam_pos + cam_dir_rel_pos).x(), (cam_pos + cam_dir_rel_pos).y(), (cam_pos + cam_dir_rel_pos).z());
+    pcl::PointXYZ cam_p2((cam_pos + cam_dir_rel).x(), (cam_pos + cam_dir_rel).y(), (cam_pos + cam_dir_rel).z());
     viewer_ptr->addLine(cam_p1, cam_p2, 1.0, 1.0, 1.0, "cam line");
     viewer_ptr->addSphere(cam_p1, 1.0, 1.0, 0.0, 0.0, "cam sphere origin");
     viewer_ptr->addSphere(cam_p2, 0.4, 0.0, 1.0, 0.0, "cam sphere direction");
 
     // Create plane perpendicular to the camera direction, positioned at the furthest away point of the convex hull
     Eigen::Vector3f plane_origin(0.0, 0.0, 0.0); //TODO: Change to furthest hull point
-    Eigen::Vector3f plane_normal(-cam_dir_rel_pos.x(), -cam_dir_rel_pos.y(), -cam_dir_rel_pos.z());
+    float max_distance = 0.0f;
+    
+    // Find the point furthest away from the camera
+    for (pcl::PointXYZ p : *convex_hull_cloud_ptr) {
+        
+        Eigen::Vector3f v = pointXYZtoVector3f(p) - cam_pos;
+        // 2. Take the dot product of that vector with the unit plane normal vector 
+        float dist = abs(v.dot(cam_dir_rel));
+        if (dist > max_distance) {
+            max_distance = dist;
+            plane_origin = pointXYZtoVector3f(p);
+        }
+    }
+
+    pcl::PointXYZ plane_origin_p = vector3fToPointXYZ(plane_origin);
+    std::cerr << "Plane origin: " << toString(plane_origin_p, 2) << std::endl;
+    viewer_ptr->addSphere(plane_origin_p, 1, 1.0, 0.0, 0.0, "projection plane origin");
+
+
+    Eigen::Vector3f plane_normal(-cam_dir_rel.x(), -cam_dir_rel.y(), -cam_dir_rel.z());
     plane_normal.normalize();
     // 1. vector from plane origin to point of interest
-    Eigen::Vector3f v = pointXYZtoVector3f(com_hull) - plane_origin;
+    Eigen::Vector3f v = pointXYZtoVector3f(com_chull) - plane_origin;
     // 2. Take the dot product of that vector with the unit plane normal vector 
     float dist = v.dot(plane_normal);
-    Eigen::Vector3f projected_point = pointXYZtoVector3f(com_hull) - dist*plane_normal;
+    Eigen::Vector3f com_chull_projected = pointXYZtoVector3f(com_chull) - dist*plane_normal;
 
     // Visualize projected point
-    viewer_ptr->addSphere(vector3fToPointXYZ(projected_point), 0.4, 0.0, 1.0, 0.0, "convex hull com projected");
+    viewer_ptr->addSphere(vector3fToPointXYZ(com_chull_projected), 0.4, 0.0, 1.0, 0.0, "convex hull com projected");
+
+
+    // Not for the average point
+    // 1. vector from plane origin to point of interest
+    Eigen::Vector3f v2 = pointXYZtoVector3f(average_chull) - plane_origin;
+    // 2. Take the dot product of that vector with the unit plane normal vector 
+    float dist2 = v2.dot(plane_normal);
+    Eigen::Vector3f average_chull_projected = pointXYZtoVector3f(average_chull) - dist2*plane_normal;
+
+    viewer_ptr->addSphere(vector3fToPointXYZ(average_chull_projected), 0.4, 1.0, 1.0, 0.0, "average hull com projected");
 
 
 
@@ -272,8 +312,10 @@ int main(int argc, char** argv) {
     Visualise CoM's
     */
     viewer_ptr->addSphere(com_actual, 1.0, 1.0, 1.0, 1.0, "actual com");
-    viewer_ptr->addSphere(com_hull, 0.4, 0.0, 1.0, 0.0, "convex hull com");
+    viewer_ptr->addSphere(com_chull, 0.4, 0.0, 1.0, 0.0, "convex hull com");
 
+    pcl::PointXYZ com_chull_projected_p = vector3fToPointXYZ(com_chull_projected);
+    pcl::PointXYZ average_chull_projected_p = vector3fToPointXYZ(average_chull_projected);
 
     /*
     Display results
@@ -282,8 +324,11 @@ int main(int argc, char** argv) {
     displayText(viewer_ptr, "Actual CoM: " + toString(com_actual, 3));
     displayText(viewer_ptr, "AABB CoM: " + toString(AABB_center_point, 3));
     displayText(viewer_ptr, "OBB CoM: " + toString(OBB_center_point, 3));
-    displayText(viewer_ptr, "Hull CoM: " + toString(com_hull, 3));
-    // displayText(viewer_ptr, "Convex Hull CoM: " + toString(com_chull));
+    displayText(viewer_ptr, "Hull CoM: " + toString(com_chull, 3));
+    displayText(viewer_ptr, "Convex Hull CoM: " + toString(com_chull, 3));
+    displayText(viewer_ptr, "Convex Hull CoM Projected: " + toString(com_chull_projected_p, 3));
+    displayText(viewer_ptr, "Convex Hull Average: " + toString(average_chull, 3));
+    displayText(viewer_ptr, "Convex Hull Average Projected: " + toString(average_chull_projected_p, 3));
 
 
     
@@ -332,7 +377,8 @@ int main(int argc, char** argv) {
         << "," << com_actual.x << "," << com_actual.y << "," << com_actual.z 
         << "," << AABB_center_point.x << "," << AABB_center_point.y << "," << AABB_center_point.z 
         << "," << OBB_center_point.x << "," << OBB_center_point.y << "," << OBB_center_point.z 
-        << "," << com_hull.x << "," << com_hull.y << "," << com_hull.z
+        << "," << com_chull_projected.x() << "," << com_chull_projected.y() << "," << com_chull_projected.z()
+        << "," << average_chull_projected.x() << "," << average_chull_projected.y() << "," << average_chull_projected.z()
         << "\n";
         std::string data_string = data.str();
         // writeStringToFile(results_file_path, data_string);

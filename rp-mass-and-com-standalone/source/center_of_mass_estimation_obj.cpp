@@ -13,6 +13,7 @@
 
 #include <sstream>
 #include <boost/filesystem.hpp>
+#include <pcl/common/centroid.h>
 
 /*Own code*/
 #include "data_reading.cpp"
@@ -33,12 +34,13 @@ void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr);
 ./center_of_mass_estimation_obj true /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply/cone_triangulated_hc.ply /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/data/cone_triangulated_hc_data.txt /home/svenp/rp-mass-and-com/test_results/com_full_mesh/
 
 ./center_of_mass_estimation_obj false ~/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/ply/torus_triangulated_lc.ply ~/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/torus_triangulated_lc_data.txt
+./center_of_mass_estimation_obj false ~/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/ply/torus_triangulated_lc.ply ~/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/sphere_triangulated_lc_data.txt
 */
 /**
  * Usage: ./volume_estimation_obj <write results> <.obj file> (<data file>) (<results output folder>)
  * Supports .obj and .ply files.
- * If <print results> is set to "true", calculated results will be written to a file in <results output folder> instead, and the will be no visualization.
- * If <print results> is set to "true", both <data file> and <results output folder> must be given.
+ * If <write results> is set to "true", calculated results will be written to a file in <results output folder> instead, and the will be no visualization.
+ * If <write results> is set to "true", both <data file> and <results output folder> must be given.
  * If no <data file> is passed, the file path will be assumed from the <.obj file>.
 */
 int main(int argc, char** argv) {
@@ -151,6 +153,45 @@ int main(int argc, char** argv) {
     std::cerr << "Tetra CoM: '" << com_tetra << "'" << std::endl;
 
 
+    /*
+    CoM estimation using Convex Hull
+    */
+    pcl::PointCloud<pcl::PointXYZ>::Ptr convex_hull_cloud_ptr (new pcl::PointCloud<pcl::PointXYZ>);
+    // calcConvexHull3D(cloud_ptr, convex_hull_cloud_ptr);
+
+    pcl::PolygonMesh::Ptr convex_hull_mesh_ptr (new pcl::PolygonMesh);
+    double vol_chull = calcConvexHull3D(cloud_ptr, convex_hull_mesh_ptr);
+    
+    pcl::fromPCLPointCloud2(convex_hull_mesh_ptr->cloud, *convex_hull_cloud_ptr);
+
+    // Visualize hull points
+    viewer_ptr->addPointCloud(convex_hull_cloud_ptr, "convex hull cloud");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.0, 1.0, "convex hull cloud");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "convex hull cloud");
+
+    // Visualize hull mesh
+    viewer_ptr->addPolygonMesh(*convex_hull_mesh_ptr, "convex hull mesh");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.5, 0.5, "convex hull mesh");
+    // viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 1.0, 1.0, "convex hull mesh");
+    viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, 0.4, "convex hull mesh");
+    // viewer_ptr->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_OPACITY, 1.0, "convex hull mesh");
+
+    // TODO: Still needs fix for nomals for this to work. Temporary solution is to take the average of the chull points
+    pcl::PointXYZ com_chull = pcl::PointXYZ();
+    res = calcMeshCoMTetrahedron(convex_hull_mesh_ptr, cloud_ptr, centroid_normals_ptr, com_chull, AABB_center_point);
+
+    /*
+    Some normals seem to be pointing towards the outside while others are pointing towards the inside.
+    Maybe try correcting them by pointing them away from the center?
+    */
+    pcl::PointXYZ convex_hull_average = pcl::PointXYZ();
+    pcl::CentroidPoint<pcl::PointXYZ> chull_average_calc;
+    for (pcl::PointXYZ p : *convex_hull_cloud_ptr) {
+        chull_average_calc.add(p);
+    }
+    chull_average_calc.get(convex_hull_average);
+    viewer_ptr->addSphere(convex_hull_average, 0.4, 0.5, 0.5, 0.5, "convex hull average");
+    
 
 
     /*
@@ -161,7 +202,8 @@ int main(int argc, char** argv) {
     displayText(viewer_ptr, "AABB CoM: " + toString(AABB_center_point, 3));
     displayText(viewer_ptr, "OBB CoM: " + toString(OBB_center_point, 3));
     displayText(viewer_ptr, "Tetra CoM: " + toString(com_tetra, 3));
-    // displayText(viewer_ptr, "Convex Hull CoM: " + toString(com_chull));
+    displayText(viewer_ptr, "Convex Hull CoM: " + toString(com_chull, 3));
+    displayText(viewer_ptr, "Convex Hull Average: " + toString(convex_hull_average, 3));
     
 
 
@@ -212,6 +254,7 @@ int main(int argc, char** argv) {
         << "," << OBB_center_point.x << "," << OBB_center_point.y << "," << OBB_center_point.z 
         << "," << com_tetra.x << "," << com_tetra.y << "," << com_tetra.z 
         << "," << "na.x" << "," << "na.y" << "," << "na.z" 
+        << "," << convex_hull_average.x << "," << convex_hull_average.y << "," << convex_hull_average.z 
         << "\n";
         std::string data_string = data.str();
         // writeStringToFile(results_file_path, data_string);

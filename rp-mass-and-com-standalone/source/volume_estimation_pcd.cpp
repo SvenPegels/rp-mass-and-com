@@ -53,6 +53,8 @@ void initVisualizer(pcl::visualization::PCLVisualizer::Ptr viewer_ptr);
 /*
 ./volume_estimation_pcd true /home/svenp/rp-mass-and-com/pcd_files/partial_view_generated_clouds/torus_triangulated_lc_cam_2.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/torus_triangulated_lc_data.txt /home/svenp/rp-mass-and-com/test_results/volume_partial_view/
 
+./volume_estimation_pcd true /home/svenp/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/PCD_TEST_RES_TEMP/all_57deg_-30_30_-30_16-1920/cone_triangulated_lc_res_0.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/cone_triangulated_lc_data.txt /home/svenp/rp-mass-and-com/test_results/volume_partial_view/
+
 ./volume_estimation_pcd false /home/svenp/rp-mass-and-com/pcd_files/partial_view_generated_clouds/cylinder_triangulated_lc_cam_0.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/cone_triangulated_lc_data.txt
 
 ./volume_estimation_pcd false /home/svenp/rp-mass-and-com/rp-mass-and-com-depth-camera-victoria/My-project/PCD_TEST_RES/cone_triangulated_lc_res_0.pcd /home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/data/cone_triangulated_lc_data.txt
@@ -273,7 +275,7 @@ int main (int argc, char** argv) {
         // Write the results to a .csv file
         std::stringstream data;
         // data << "file_name" << "," << "actual_volume" << "," << "aabb_volume" << "," << "obb_volume" << "," << "chull_volume" << "\n";
-        data << threed_file_path << "," << vol_actual << "," << vol_AABB << "," << vol_OBB << "," << vol_chull << "\n";
+        data << threed_file_path << "," << cloud_ptr->width << "," << vol_actual << "," << vol_AABB << "," << vol_OBB << "," << vol_chull << "\n";
         std::string data_string = data.str();
         // writeStringToFile(results_file_path, data_string);
         appendStringToFile(results_file_path, data_string);
