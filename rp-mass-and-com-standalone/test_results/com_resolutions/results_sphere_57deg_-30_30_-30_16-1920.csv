@@ -1,0 +1,16 @@
+file_name,actual_com_x,actual_com_y,actual_com_z,aabb_com_x,aabb_com_y,aabb_com_z,obb_com_x,obb_com_y,obb_com_z,chull_com_x,chull_com_y,chull_com_z
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_3.pcd,0,0,0,-1.55738,2.38335,-0.892067,-3.02943,2.91784,-2.42218,-4.4323,3.87117,-0.836224
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_4.pcd,0,0,0,-1.34439,2.43609,-1.28158,-2.79445,3.08708,-3.19937,-3.22108,7.60802,2.08616
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_2.pcd,0,0,0,-1.7159,2.1306,-2.51857,-2.86976,3.07226,-3.13652,-4.79262,3.92763,-2.15791
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_9.pcd,0,0,0,-1.35244,1.50396,-0.893529,-2.93249,2.55672,-2.64258,-5.23835,1.90753,1.5656
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_10.pcd,0,0,0,-1.16524,0.865692,-0.934597,-2.89685,2.49446,-2.79544,-24.2757,-46.7609,-14.223
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_12.pcd,0,0,0,-1.15183,0.821732,-0.840144,-2.55732,2.32064,-2.55939,-5.61333,1.44198,4.96083
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_14.pcd,0,0,0,-1.15238,0.806653,-0.809776,-2.53873,2.24862,-2.51743,-6.22828,0.926751,3.48573
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_8.pcd,0,0,0,-1.34816,1.25921,-1.43948,-3.27986,2.74787,-3.11491,-6.05033,2.51687,0.664281
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_11.pcd,0,0,0,-1.22176,0.832513,-0.771226,-2.67134,2.45577,-2.68673,-5.787,2.21309,3.52497
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_0.pcd,0,0,0,-2.45504,2.70014,-2.35937,-3.84118,3.50459,-3.82777,-4.12976,2.88965,-4.18441
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_5.pcd,0,0,0,-1.44186,1.48369,-1.9107,-3.3805,2.75365,-3.53045,-5.17977,2.94209,-1.07579
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_7.pcd,0,0,0,-1.38459,2.02193,-1.27748,-2.52047,3.20844,-2.81275,-5.42598,2.59596,2.94259
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_6.pcd,0,0,0,-1.38525,1.79603,-1.04875,-3.09285,2.66827,-2.68635,-5.90291,3.06889,-0.225628
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_1.pcd,0,0,0,-1.89737,2.88792,-2.34013,-3.47041,3.26442,-3.35813,-3.9314,-28.4414,-14.1252
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_13.pcd,0,0,0,-1.15101,0.813778,-0.782384,-2.62672,2.38525,-2.62609,-5.82719,1.67933,3.71684

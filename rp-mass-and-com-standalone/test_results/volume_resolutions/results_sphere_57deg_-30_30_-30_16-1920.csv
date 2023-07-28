@@ -1,0 +1,16 @@
+file_name,actual_volume,aabb_volume,obb_volume,chull_volume
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_3.pcd,3658.71,4265.55,3257.44,1379.3
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_4.pcd,3658.71,4154.1,3097.14,1317.14
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_2.pcd,3658.71,3549.78,3080.58,1191.23
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_9.pcd,3658.71,4971.4,3731.06,1537.17
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_10.pcd,3658.71,5475.35,3748.97,1664.37
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_12.pcd,3658.71,5606.44,4094.18,1754.58
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_14.pcd,3658.71,5643.9,4174.7,1772.57
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_8.pcd,3658.71,4772.75,3223.35,1443.01
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_11.pcd,3658.71,5583.45,3939.3,1747.79
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_0.pcd,3658.71,2380.73,1599.21,610.376
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_5.pcd,3658.71,4328.83,2959.95,1309.68
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_7.pcd,3658.71,4422.63,3444.2,1475.44
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_6.pcd,3658.71,4668.05,3421.01,1452.96
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_1.pcd,3658.71,2984.13,2343.34,893.076
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/sphere_triangulated_lc_res_13.pcd,3658.71,5648.65,4025.36,1757.19

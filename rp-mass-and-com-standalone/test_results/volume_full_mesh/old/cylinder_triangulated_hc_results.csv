@@ -1,0 +1,2 @@
+file_name,actual_volume,aabb_volume,obb_volume,tetra_volume,chull_volume
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply/cylinder_triangulated_hc.ply,6283.02,8000,7999.91,6283.02,6283.02

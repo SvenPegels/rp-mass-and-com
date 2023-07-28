@@ -1,0 +1,5 @@
+file_name,actual_volume,aabb_volume,obb_volume,tetra_volume,chull_volume
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply/cone_triangulated_hc.ply,2094.34,8000,7999.93,2094.35,2094.34
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply/cylinder_triangulated_hc.ply,6283.02,8000,7999.91,6283.02,6283.02
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply/cube_triangulated_hc.ply,8000,8000,8000,8000,8000
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply/torus_triangulated_hc.ply,1233.45,3125,3124.85,1233.38,2252.8

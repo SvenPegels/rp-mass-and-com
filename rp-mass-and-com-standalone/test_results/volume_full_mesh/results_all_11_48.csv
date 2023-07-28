@@ -1,0 +1,7 @@
+file_name,cloud_size,actual_volume,aabb_volume,obb_volume,tetra_volume,chull_volume
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/ply/mug_triangulated_lc.ply,3264,1285.29,12673.3,13299.1,1285.3,8368.43
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/ply/torus_triangulated_lc.ply,576,1174.74,3125,3120.96,1174.73,2214.57
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/ply/cylinder_triangulated_lc.ply,64,6242.89,8000,7997.2,6242.89,6242.89
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/ply/cone_triangulated_lc.ply,33,2080.96,8000,7996.1,2080.96,2080.96
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/ply/cube_triangulated_lc.ply,8,8000,8000,8000,8000,8000
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/base_quality/ply/sphere_triangulated_lc.ply,42,3658.71,7608.46,7561.87,3658.71,3658.71

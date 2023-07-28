@@ -1,0 +1,16 @@
+file_name,actual_com_x,actual_com_y,actual_com_z,aabb_com_x,aabb_com_y,aabb_com_z,obb_com_x,obb_com_y,obb_com_z,chull_com_x,chull_com_y,chull_com_z
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_9.pcd,0,0,0,-0.00816536,0.00947094,-0.00795269,-3.45573,3.25021,-3.45374,-5.5451,0.300728,8.8825
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_7.pcd,0,0,0,-0.00624657,0.0148883,-0.00609112,-3.50047,3.39113,-3.49772,-6.56181,4.97549,6.97231
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_4.pcd,0,0,0,-0.0152607,0.0194492,-0.0150967,-3.50506,3.50176,-3.57322,-7.26268,2.93185,9.36612
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_13.pcd,0,0,0,-4.86374e-05,0.000282288,4.76837e-06,-3.34769,3.31866,-3.32806,-7.44559,7.37958,7.40836
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_12.pcd,0,0,0,0,4.95911e-05,-9.87053e-05,-3.36043,3.34711,-3.35707,-7.45197,6.8434,7.54046
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_0.pcd,0,0,0,-0.0145226,0.878717,-0.0142026,-4.84889,2.32122,-4.85314,-6.11778,-0.362941,-0.121165
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_1.pcd,0,0,0,-0.0787897,0.248457,-0.0783815,-3.41644,3.45167,-3.41617,-5.16855,-1.0102,3.43081
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_11.pcd,0,0,0,-0.000139236,0.00202227,-0.000258446,-3.31773,3.34653,-3.30892,-7.45385,6.66523,7.35814
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_5.pcd,0,0,0,-0.0031209,0.018589,-0.00290871,-3.3125,3.36173,-3.316,-7.2225,2.12192,6.19262
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_10.pcd,0,0,0,-0.00144291,0.00159264,-0.00080204,-3.31854,3.30756,-3.35195,-7.63169,5.49864,6.70432
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_14.pcd,0,0,0,0,1.43051e-06,0,-3.34305,3.31715,-3.33475,-7.46394,7.66675,7.36594
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_3.pcd,0,0,0,-0.0458555,0.0155711,-0.045454,-3.96573,2.85732,-3.97952,-6.66866,2.07838,4.86985
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_8.pcd,0,0,0,-0.016613,0.00679827,-0.0164585,-3.36144,3.29107,-3.36917,-7.46189,4.09972,6.51535
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_2.pcd,0,0,0,-0.0105629,0.00691509,-0.0103455,-3.22249,3.54916,-3.22443,-6.88262,-0.118685,5.33521
+/home/svenp/rp-mass-and-com/pcd_files/resolution_generated_clouds/cube_triangulated_lc_res_6.pcd,0,0,0,-0.0163269,0.0168529,-0.0161657,-3.46564,3.23808,-3.45328,-8.07929,18.4597,6.7541

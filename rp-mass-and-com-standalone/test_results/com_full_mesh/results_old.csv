@@ -1,0 +1,5 @@
+file_name,actual_com_x,actual_com_y,actual_com_z,aabb_com_x,aabb_com_y,aabb_com_z,obb_com_x,obb_com_y,obb_com_z,tetra_com_x,tetra_com_y,tetra_com_z,chull_com_x,chull_com_y,chull_com_z
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply/cone_triangulated_hc.ply,1e-06,-5,-1e-06,0,0,0,-1.45897e-07,-9.53674e-07,6.73336e-07,-1.21576e-07,-5,-6.5102e-07,na.x,na.y,na.z
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply/cylinder_triangulated_hc.ply,0,3e-06,-1e-06,0,0,0,-2.26498e-08,0,1.14441e-08,-1.00012e-07,-9.28647e-09,-5.64546e-08,na.x,na.y,na.z
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply/cube_triangulated_hc.ply,0,0,0,0,0,0,0,0,0,9.44215e-09,-9.44215e-09,9.44214e-09,na.x,na.y,na.z
+/home/svenp/rp-mass-and-com/obj_files/partial_view_base_models/high_quality/ply/torus_triangulated_hc.ply,-8e-06,-0,-1e-05,0,0,0,1.40345e-07,3.81266e-09,-2.804e-07,5.18242e-09,6.25346e-06,1.00033e-06,na.x,na.y,na.z
