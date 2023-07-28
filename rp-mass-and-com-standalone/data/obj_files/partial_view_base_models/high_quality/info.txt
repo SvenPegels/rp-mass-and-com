@@ -1,0 +1,9 @@
+All models are:
+- Base blender models
+- Highest resolution possible
+- Scaled *10 on all axis
+- Exported with:
+	- UV Coordinates
+	- Normals
+	- Triangulated Mesh
+	- Materials: Export
